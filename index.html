@@ -567,7 +567,7 @@ let timerInterval = null;
 
 // ─── STORAGE ──────────────────────────────────────────────
 function getEmployees() {
-  try { return JSON.parse(localStorage.getItem('rcb_employees') || '["Lakshmi","Harhitha"]'); } catch { return ["Lakshmi","Harhitha"]; }
+  try { return JSON.parse(localStorage.getItem('rcb_employees') || '["Lakshmi","Harshitha"]'); } catch { return ["Lakshmi","Harshitha"]; }
 }
 function saveEmployees(l) { localStorage.setItem('rcb_employees', JSON.stringify(l)); }
 function getRecords() {
