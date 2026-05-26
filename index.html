@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RAM CAREER BRIDGE – TimeSheet</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0f1117;
+  --bg2: #161b26;
+  --surface: #1e2535;
+  --surface2: #252d3d;
+  --border: #2e3a50;
+  --border2: #3a4a65;
+  --text: #e8eaf0;
+  --text2: #8a94a8;
+  --text3: #5a6478;
+  --gold: #d4a843;
+  --gold-bg: #2a2010;
+  --gold-border: #6b5220;
+  --green: #4caf7d;
+  --green-bg: #0d2318;
+  --green-border: #1e5c38;
+  --green-text: #6dcc9a;
+  --red: #e05c5c;
+  --red-bg: #2a1010;
+  --red-border: #5c2020;
+  --red-text: #ff8a8a;
+  --blue: #5b8ef0;
+  --blue-bg: #0d1a35;
+  --blue-border: #1e3a70;
+  --blue-text: #8ab4ff;
+  --radius: 10px;
+  --radius-lg: 16px;
+}
+
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+/* LOGIN SCREEN */
+#login-screen {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background: var(--bg);
+}
+.login-logo {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+.login-logo .company-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--gold-bg);
+  border: 1px solid var(--gold-border);
+  border-radius: 99px;
+  padding: 6px 16px 6px 10px;
+  margin-bottom: 1.25rem;
+}
+.logo-icon {
+  width: 36px; height: 36px;
+  background: var(--gold);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; font-weight: 700; color: #1a1200;
+}
+.company-badge-text { font-size: 12px; font-weight: 600; color: var(--gold); letter-spacing: 0.06em; }
+.login-logo h1 { font-size: 28px; font-weight: 600; letter-spacing: -0.03em; color: var(--text); }
+.login-logo h1 span { color: var(--gold); }
+.login-logo p { font-size: 13px; color: var(--text2); margin-top: 6px; }
+
+.login-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  width: 100%;
+  max-width: 380px;
+}
+.login-card h2 { font-size: 17px; font-weight: 500; color: var(--text); margin-bottom: 6px; }
+.login-card p { font-size: 13px; color: var(--text2); margin-bottom: 1.5rem; }
+
+.field-label { font-size: 11px; font-weight: 600; letter-spacing: 0.07em; color: var(--text3); text-transform: uppercase; margin-bottom: 6px; }
+.field-group { margin-bottom: 1rem; }
+select, input[type=text], input[type=password] {
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s;
+}
+select:focus, input:focus { border-color: var(--blue); }
+select option { background: var(--bg2); }
+
+.login-btn {
+  width: 100%;
+  padding: 12px;
+  background: var(--gold);
+  border: none;
+  border-radius: var(--radius);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a1200;
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-top: 4px;
+}
+.login-btn:hover { background: #e8bc55; transform: translateY(-1px); }
+.login-btn:active { transform: translateY(0); }
+
+.login-error {
+  background: var(--red-bg);
+  border: 1px solid var(--red-border);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--red-text);
+  margin-bottom: 1rem;
+  display: none;
+}
+
+/* MAIN APP */
+#main-app { display: none; }
+
+.topbar {
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  padding: 0 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.topbar-left { display: flex; align-items: center; gap: 12px; }
+.topbar-logo { display: flex; align-items: center; gap: 8px; }
+.topbar-logo .logo-icon-sm {
+  width: 28px; height: 28px;
+  background: var(--gold);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; color: #1a1200;
+}
+.topbar-company { font-size: 14px; font-weight: 600; color: var(--text); }
+.topbar-company span { color: var(--gold); }
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+.user-chip {
+  display: flex; align-items: center; gap: 7px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 99px; padding: 4px 12px 4px 6px;
+  font-size: 13px; color: var(--text2);
+}
+.user-chip-avatar {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--blue);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 700; color: #fff;
+}
+.logout-btn {
+  background: transparent; border: 1px solid var(--border);
+  border-radius: 7px; padding: 5px 12px;
+  font-family: 'DM Sans', sans-serif; font-size: 13px;
+  color: var(--text2); cursor: pointer; transition: all 0.12s;
+}
+.logout-btn:hover { color: var(--red-text); border-color: var(--red-border); background: var(--red-bg); }
+
+.page { max-width: 720px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+
+/* Section label */
+.section-label { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; color: var(--text3); text-transform: uppercase; margin-bottom: 12px; }
+
+/* Cards */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+/* Live tracker banner */
+.tracker-banner {
+  background: linear-gradient(135deg, #0d1e10 0%, #0d1a35 100%);
+  border: 1px solid var(--green-border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.25rem;
+  display: none;
+}
+.tracker-banner.show { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.tracker-left { display: flex; align-items: center; gap: 12px; }
+.tracker-pulse { width: 10px; height: 10px; background: var(--green); border-radius: 50%; animation: pulse 1.4s ease-in-out infinite; flex-shrink: 0; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.6)} }
+.tracker-name { font-size: 15px; font-weight: 500; color: var(--green-text); }
+.tracker-since { font-size: 12px; color: var(--text2); margin-top: 2px; }
+.tracker-timer {
+  font-family: 'DM Mono', monospace;
+  font-size: 28px;
+  font-weight: 500;
+  color: var(--green-text);
+  letter-spacing: 0.02em;
+}
+
+/* Clock section */
+.emp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin-bottom: 1rem; }
+.emp-btn {
+  padding: 11px 14px; border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--surface2); color: var(--text2);
+  font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500;
+  cursor: pointer; transition: all 0.15s;
+  display: flex; align-items: center; gap: 9px; position: relative;
+}
+.emp-btn:hover { border-color: var(--border2); background: #2a3345; }
+.emp-btn.selected { background: var(--blue-bg); border-color: var(--blue); color: var(--blue-text); }
+.emp-btn.clocked-in { background: var(--green-bg); border-color: var(--green-border); color: var(--green-text); }
+.emp-avatar {
+  width: 30px; height: 30px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700;
+  background: var(--border); color: var(--text2); flex-shrink: 0;
+}
+.emp-btn.selected .emp-avatar { background: var(--blue); color: #fff; }
+.emp-btn.clocked-in .emp-avatar { background: var(--green); color: #fff; }
+.emp-name { flex: 1; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.emp-remove {
+  position: absolute; top: 4px; right: 5px;
+  background: transparent; border: none; color: var(--text3);
+  cursor: pointer; font-size: 12px; line-height: 1; padding: 2px 4px;
+  border-radius: 4px; opacity: 0; transition: opacity 0.12s;
+}
+.emp-btn:hover .emp-remove { opacity: 1; }
+.emp-remove:hover { color: var(--red-text); background: var(--red-bg); }
+
+.add-emp-btn {
+  padding: 11px 14px; border: 1px dashed var(--border2);
+  border-radius: var(--radius); background: transparent;
+  color: var(--text3); font-family: 'DM Sans', sans-serif;
+  font-size: 14px; font-weight: 500; cursor: pointer;
+  transition: all 0.15s; display: flex; align-items: center; gap: 9px;
+  width: 100%; margin-top: 4px;
+}
+.add-emp-btn:hover { border-color: var(--blue); color: var(--blue-text); background: var(--blue-bg); }
+
+.add-form { display: none; margin-top: 10px; }
+.add-form.show { display: flex; gap: 8px; }
+.add-form input { flex: 1; }
+.add-form button { padding: 9px 16px; border-radius: var(--radius); font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; border: 1px solid; transition: all 0.12s; }
+.btn-save { background: var(--blue-bg); border-color: var(--blue); color: var(--blue-text); }
+.btn-cancel-sm { background: var(--surface2); border-color: var(--border); color: var(--text2); }
+
+.action-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 1rem; }
+.action-btn {
+  padding: 13px; border-radius: var(--radius);
+  font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 500;
+  cursor: pointer; transition: all 0.15s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  border: 1px solid transparent;
+}
+.action-btn:disabled { opacity: 0.3; cursor: not-allowed; transform: none !important; }
+.action-btn:not(:disabled):hover { transform: translateY(-1px); }
+.btn-in { background: var(--green-bg); border-color: var(--green-border); color: var(--green-text); }
+.btn-out { background: var(--red-bg); border-color: var(--red-border); color: var(--red-text); }
+
+/* Summary */
+.summary-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; flex-wrap: wrap; gap: 8px; }
+.tabs { display: flex; gap: 3px; background: var(--bg2); border-radius: var(--radius); padding: 3px; border: 1px solid var(--border); flex-wrap: wrap; }
+.tab-btn { padding: 6px 13px; border-radius: 7px; border: none; background: transparent; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; color: var(--text2); cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+.tab-btn.active { background: var(--surface); color: var(--text); }
+
+.week-nav-row { display: flex; align-items: center; gap: 8px; margin-bottom: 1rem; }
+.week-nav-row button { background: var(--surface2); border: 1px solid var(--border); border-radius: 7px; width: 30px; height: 30px; cursor: pointer; color: var(--text2); font-size: 18px; display: flex; align-items: center; justify-content: center; transition: all 0.12s; }
+.week-nav-row button:hover { background: #2a3345; }
+.week-label { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text2); flex: 1; text-align: center; }
+
+.stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 1rem; }
+.stat-box { background: var(--bg2); border-radius: var(--radius); padding: 12px 14px; border: 1px solid var(--border); }
+.stat-box-label { font-size: 11px; color: var(--text3); margin-bottom: 4px; font-weight: 500; }
+.stat-box-val { font-size: 22px; font-weight: 600; color: var(--text); letter-spacing: -0.02em; }
+.stat-box-unit { font-size: 13px; font-weight: 400; color: var(--text2); margin-left: 2px; }
+
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { text-align: left; padding: 6px 8px; color: var(--text3); font-weight: 500; font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; border-bottom: 1px solid var(--border); }
+td { padding: 9px 8px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+.badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 99px; font-weight: 500; }
+.badge-active { background: var(--green-bg); color: var(--green-text); border: 1px solid var(--green-border); animation: pulse 1.4s ease-in-out infinite; }
+.del-btn { background: transparent; border: none; color: var(--text3); cursor: pointer; padding: 3px 7px; border-radius: 5px; font-size: 14px; transition: all 0.12s; }
+.del-btn:hover { color: var(--red-text); background: var(--red-bg); }
+.empty-state { text-align: center; padding: 2.5rem 1rem; color: var(--text3); font-size: 14px; }
+.empty-icon { font-size: 28px; margin-bottom: 8px; }
+
+.total-footer { display: flex; justify-content: space-between; align-items: center; padding: 12px 8px 0; margin-top: 4px; border-top: 1px solid var(--border); }
+.total-footer-label { font-size: 13px; color: var(--text2); }
+.total-footer-val { font-family: 'DM Mono', monospace; font-size: 20px; font-weight: 500; color: var(--gold); }
+
+.clear-btn { font-size: 12px; font-family: 'DM Sans', sans-serif; background: transparent; border: 1px solid var(--border); border-radius: 7px; padding: 5px 10px; color: var(--text3); cursor: pointer; transition: all 0.15s; }
+.clear-btn:hover { color: var(--red-text); border-color: var(--red-border); background: var(--red-bg); }
+
+/* Admin panel */
+.admin-section { margin-top: 1.5rem; }
+.admin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.admin-card {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 1rem; cursor: pointer; transition: all 0.15s;
+  display: flex; align-items: center; gap: 10px;
+}
+.admin-card:hover { border-color: var(--border2); background: var(--surface2); }
+.admin-card-icon { font-size: 20px; }
+.admin-card-label { font-size: 13px; font-weight: 500; color: var(--text); }
+.admin-card-desc { font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+/* Who is in right now */
+.who-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; }
+.who-card {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 12px 14px; display: flex; align-items: center; gap: 10px;
+}
+.who-card.active { border-color: var(--green-border); background: var(--green-bg); }
+.who-card.inactive { opacity: 0.5; }
+.who-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text3); flex-shrink: 0; }
+.who-card.active .who-dot { background: var(--green); animation: pulse 1.4s ease-in-out infinite; }
+.who-info-name { font-size: 13px; font-weight: 500; color: var(--text); }
+.who-info-time { font-size: 11px; color: var(--text2); margin-top: 2px; font-family: 'DM Mono', monospace; }
+
+/* Admin password modal */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+  display: none; align-items: center; justify-content: center;
+  z-index: 999; padding: 1rem;
+}
+.modal-overlay.show { display: flex; }
+.modal { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.5rem; width: 100%; max-width: 360px; }
+.modal h3 { font-size: 16px; font-weight: 500; margin-bottom: 6px; }
+.modal p { font-size: 13px; color: var(--text2); margin-bottom: 1.25rem; }
+.modal-btns { display: flex; gap: 8px; margin-top: 1rem; }
+.modal-btns button { flex: 1; padding: 10px; border-radius: var(--radius); font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; border: 1px solid; }
+
+/* Responsive */
+@media (max-width: 480px) {
+  .page { padding: 1.25rem 1rem 3rem; }
+  .emp-grid { grid-template-columns: 1fr 1fr; }
+  .stats-row { grid-template-columns: 1fr 1fr; }
+  .admin-grid { grid-template-columns: 1fr; }
+  .topbar-company { font-size: 12px; }
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="login-screen">
+  <div class="login-logo">
+    <div class="company-badge">
+      <div class="logo-icon">R</div>
+      <span class="company-badge-text">RAM CAREER BRIDGE</span>
+    </div>
+    <h1>Time<span>Sheet</span></h1>
+    <p>IT Solution Company</p>
+  </div>
+
+  <div class="login-card">
+    <h2>Welcome back</h2>
+    <p>Sign in to clock in or manage timesheets</p>
+
+    <div id="login-error" class="login-error">Incorrect password. Please try again.</div>
+
+    <div class="field-group">
+      <div class="field-label">Who are you?</div>
+      <select id="login-user">
+        <option value="">Select your name...</option>
+      </select>
+    </div>
+    <div class="field-group">
+      <div class="field-label">Password</div>
+      <input type="password" id="login-pass" placeholder="Enter your password" onkeydown="if(event.key==='Enter')doLogin()" />
+    </div>
+    <button class="login-btn" onclick="doLogin()">Sign In &#x2192;</button>
+
+    <p style="font-size:11px;color:var(--text3);text-align:center;margin-top:1.25rem;">
+      Admin password: <strong style="color:var(--gold)">admin123</strong> &nbsp;|&nbsp; Employee password: <strong style="color:var(--text2)">rcb2024</strong>
+    </p>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="main-app">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-logo">
+        <div class="logo-icon-sm">R</div>
+        <div class="topbar-company">RAM CAREER <span>BRIDGE</span></div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div id="topbar-clock" style="font-family:'DM Mono',monospace;font-size:13px;color:var(--text2)"></div>
+      <div class="user-chip">
+        <div class="user-chip-avatar" id="topbar-avatar">?</div>
+        <span id="topbar-name">—</span>
+      </div>
+      <button class="logout-btn" onclick="doLogout()">Sign out</button>
+    </div>
+  </div>
+
+  <div class="page">
+
+    <!-- Live Tracker Banner -->
+    <div class="tracker-banner" id="tracker-banner">
+      <div class="tracker-left">
+        <div class="tracker-pulse"></div>
+        <div>
+          <div class="tracker-name" id="tracker-name"></div>
+          <div class="tracker-since" id="tracker-since"></div>
+        </div>
+      </div>
+      <div class="tracker-timer" id="tracker-timer">00:00:00</div>
+    </div>
+
+    <!-- Who's In Right Now -->
+    <div class="card">
+      <div class="section-label">Right now</div>
+      <div class="who-grid" id="who-grid"></div>
+    </div>
+
+    <!-- Clock In/Out -->
+    <div class="card">
+      <div class="section-label">Clock in / out</div>
+      <div class="emp-grid" id="emp-grid"></div>
+      <button class="add-emp-btn" id="add-emp-btn" onclick="showAddForm()" style="display:none">
+        <span style="font-size:18px;line-height:1">+</span> Add employee
+      </button>
+      <div class="add-form" id="add-form">
+        <input type="text" id="new-emp-input" placeholder="Employee name..." maxlength="30"
+          onkeydown="if(event.key==='Enter')saveNewEmp(); if(event.key==='Escape')cancelAddForm();" />
+        <button class="btn-save" onclick="saveNewEmp()">Add</button>
+        <button class="btn-cancel-sm" onclick="cancelAddForm()">Cancel</button>
+      </div>
+      <div class="action-row">
+        <button class="action-btn btn-in" id="btn-in" onclick="clockIn()" disabled>&#x2192; Clock In</button>
+        <button class="action-btn btn-out" id="btn-out" onclick="clockOut()" disabled>&#x2190; Clock Out</button>
+      </div>
+    </div>
+
+    <!-- Weekly Summary -->
+    <div class="card">
+      <div class="summary-top">
+        <div class="tabs" id="summary-tabs"></div>
+        <button class="clear-btn" onclick="clearWeek()">&#x2715; Clear week</button>
+      </div>
+      <div class="week-nav-row">
+        <button onclick="changeWeek(-1)">&#8249;</button>
+        <div class="week-label" id="week-label"></div>
+        <button onclick="changeWeek(1)">&#8250;</button>
+      </div>
+      <div class="stats-row" id="stats-row" style="display:none">
+        <div class="stat-box">
+          <div class="stat-box-label">Total hours</div>
+          <div class="stat-box-val" id="stat-hours">0<span class="stat-box-unit">h</span></div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-box-label">Days worked</div>
+          <div class="stat-box-val" id="stat-days">0<span class="stat-box-unit">days</span></div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-box-label">Avg per day</div>
+          <div class="stat-box-val" id="stat-avg">0<span class="stat-box-unit">h</span></div>
+        </div>
+      </div>
+      <table>
+        <thead>
+          <tr><th>Date</th><th>In</th><th>Out</th><th>Duration</th><th></th></tr>
+        </thead>
+        <tbody id="entries-body"></tbody>
+      </table>
+      <div class="total-footer" id="total-footer" style="display:none">
+        <span class="total-footer-label">Week total</span>
+        <span class="total-footer-val" id="total-val"></span>
+      </div>
+    </div>
+
+    <!-- Admin Panel -->
+    <div class="admin-section" id="admin-section" style="display:none">
+      <div class="section-label">Admin tools</div>
+      <div class="admin-grid">
+        <div class="admin-card" onclick="exportCSV()">
+          <div class="admin-card-icon">&#x1F4C4;</div>
+          <div>
+            <div class="admin-card-label">Export to CSV</div>
+            <div class="admin-card-desc">Download all timesheet data</div>
+          </div>
+        </div>
+        <div class="admin-card" onclick="showChangePassword()">
+          <div class="admin-card-icon">&#x1F512;</div>
+          <div>
+            <div class="admin-card-label">Change passwords</div>
+            <div class="admin-card-desc">Update employee PIN</div>
+          </div>
+        </div>
+        <div class="admin-card" onclick="clearAllData()">
+          <div class="admin-card-icon">&#x1F5D1;</div>
+          <div>
+            <div class="admin-card-label">Clear all data</div>
+            <div class="admin-card-desc">Wipe all records (careful!)</div>
+          </div>
+        </div>
+        <div class="admin-card" onclick="showAllThisWeek()">
+          <div class="admin-card-icon">&#x1F4CA;</div>
+          <div>
+            <div class="admin-card-label">This week report</div>
+            <div class="admin-card-desc">Summary for all employees</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Change Password Modal -->
+<div class="modal-overlay" id="pwd-modal">
+  <div class="modal">
+    <h3>Change employee password</h3>
+    <p>This updates the password all employees use to log in.</p>
+    <div class="field-group">
+      <div class="field-label">New employee password</div>
+      <input type="password" id="new-pwd-input" placeholder="New password..." />
+    </div>
+    <div class="modal-btns">
+      <button onclick="saveNewPassword()" style="background:var(--blue-bg);border-color:var(--blue);color:var(--blue-text)">Save</button>
+      <button onclick="closeModal('pwd-modal')" style="background:var(--surface2);border-color:var(--border);color:var(--text2)">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Week Report Modal -->
+<div class="modal-overlay" id="report-modal">
+  <div class="modal" style="max-width:480px">
+    <h3>This week — all employees</h3>
+    <p id="report-week-label" style="font-family:'DM Mono',monospace;font-size:12px;color:var(--text3)"></p>
+    <div id="report-body" style="margin-top:1rem"></div>
+    <div class="modal-btns">
+      <button onclick="closeModal('report-modal')" style="background:var(--surface2);border-color:var(--border);color:var(--text2)">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── STATE ────────────────────────────────────────────────
+let currentUser = null;
+let isAdmin = false;
+let selectedEmp = null;
+let activeTab = null;
+let weekOffset = 0;
+let timerInterval = null;
+
+// ─── STORAGE ──────────────────────────────────────────────
+function getEmployees() {
+  try { return JSON.parse(localStorage.getItem('rcb_employees') || '["Lakshmi","Harhitha"]'); } catch { return ["Lakshmi","Harhitha"]; }
+}
+function saveEmployees(l) { localStorage.setItem('rcb_employees', JSON.stringify(l)); }
+function getRecords() {
+  try { return JSON.parse(localStorage.getItem('rcb_records') || '[]'); } catch { return []; }
+}
+function saveRecords(r) { localStorage.setItem('rcb_records', JSON.stringify(r)); }
+function getClockState() {
+  try { return JSON.parse(localStorage.getItem('rcb_state') || '{}'); } catch { return {}; }
+}
+function saveClockState(s) { localStorage.setItem('rcb_state', JSON.stringify(s)); }
+function getPasswords() {
+  try { return JSON.parse(localStorage.getItem('rcb_passwords') || '{"admin":"admin123","employee":"rcb2024"}'); }
+  catch { return { admin:'admin123', employee:'rcb2024' }; }
+}
+function savePasswords(p) { localStorage.setItem('rcb_passwords', JSON.stringify(p)); }
+
+// ─── HELPERS ──────────────────────────────────────────────
+function initials(name) { return name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2); }
+function fmtDate(ts) { return new Date(ts).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}); }
+function fmtTime(ts) { return new Date(ts).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}); }
+function fmtHours(ms) {
+  const m = Math.round(ms/60000), h = Math.floor(m/60), mn = m%60;
+  if(h===0) return mn+'m';
+  return mn>0 ? h+'h '+mn+'m' : h+'h';
+}
+function fmtHoursDecimal(ms) { return (ms/3600000).toFixed(1); }
+function fmtElapsed(ms) {
+  const s = Math.floor(ms/1000), h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sec = s%60;
+  return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0');
+}
+
+// ─── LOGIN ────────────────────────────────────────────────
+function populateLoginDropdown() {
+  const sel = document.getElementById('login-user');
+  sel.innerHTML = '<option value="">Select your name...</option>';
+  const emps = getEmployees();
+  const opt1 = document.createElement('option'); opt1.value='admin'; opt1.textContent='Admin (Owner)'; sel.appendChild(opt1);
+  emps.forEach(name => {
+    const opt = document.createElement('option'); opt.value=name; opt.textContent=name; sel.appendChild(opt);
+  });
+}
+
+function doLogin() {
+  const user = document.getElementById('login-user').value;
+  const pass = document.getElementById('login-pass').value;
+  const pwds = getPasswords();
+  const err = document.getElementById('login-error');
+  if (!user) { err.textContent='Please select your name.'; err.style.display='block'; return; }
+  if (user === 'admin' && pass === pwds.admin) {
+    currentUser = 'Admin'; isAdmin = true;
+    err.style.display='none'; startApp();
+  } else if (user !== 'admin' && pass === pwds.employee) {
+    currentUser = user; isAdmin = false;
+    err.style.display='none'; startApp();
+  } else {
+    err.textContent='Incorrect password. Please try again.';
+    err.style.display='block';
+    document.getElementById('login-pass').value='';
+  }
+}
+
+function doLogout() {
+  currentUser=null; isAdmin=false; selectedEmp=null;
+  clearInterval(timerInterval);
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('main-app').style.display='none';
+  document.getElementById('login-pass').value='';
+  populateLoginDropdown();
+}
+
+function startApp() {
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('main-app').style.display='block';
+  document.getElementById('topbar-name').textContent = currentUser;
+  document.getElementById('topbar-avatar').textContent = initials(currentUser);
+  document.getElementById('admin-section').style.display = isAdmin ? 'block' : 'none';
+  document.getElementById('add-emp-btn').style.display = isAdmin ? 'flex' : 'none';
+
+  // If employee (not admin), auto-select themselves
+  if (!isAdmin) {
+    selectedEmp = currentUser;
+    activeTab = currentUser;
+  } else {
+    const emps = getEmployees();
+    activeTab = emps[0] || null;
+  }
+
+  renderEmpGrid();
+  renderTabs();
+  renderTable();
+  renderWhoIsIn();
+  updateLiveTracker();
+}
+
+// ─── CLOCK ────────────────────────────────────────────────
+function updateTopClock() {
+  document.getElementById('topbar-clock').textContent =
+    new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+
+function updateLiveTracker() {
+  clearInterval(timerInterval);
+  if (!selectedEmp) { document.getElementById('tracker-banner').classList.remove('show'); return; }
+  const state = getClockState();
+  const s = state[selectedEmp];
+  if (s && s.in && !s.out) {
+    document.getElementById('tracker-name').textContent = selectedEmp + ' is clocked in';
+    document.getElementById('tracker-since').textContent = 'Since ' + fmtTime(s.in);
+    document.getElementById('tracker-banner').classList.add('show');
+    timerInterval = setInterval(() => {
+      document.getElementById('tracker-timer').textContent = fmtElapsed(Date.now() - s.in);
+    }, 1000);
+    document.getElementById('tracker-timer').textContent = fmtElapsed(Date.now() - s.in);
+  } else {
+    document.getElementById('tracker-banner').classList.remove('show');
+  }
+}
+
+// ─── EMPLOYEES ────────────────────────────────────────────
+function renderEmpGrid() {
+  const emps = getEmployees();
+  const state = getClockState();
+  const grid = document.getElementById('emp-grid');
+  grid.innerHTML = '';
+  emps.forEach(name => {
+    const active = state[name] && state[name].in && !state[name].out;
+    const sel = selectedEmp === name;
+    const btn = document.createElement('button');
+    btn.className = 'emp-btn' + (sel?' selected':'') + (active&&!sel?' clocked-in':'');
+    // Only allow selecting own name if not admin
+    if (!isAdmin && name !== currentUser) { btn.disabled=true; btn.style.opacity='0.4'; btn.style.cursor='not-allowed'; }
+    btn.onclick = () => { if(isAdmin||name===currentUser) selectEmp(name); };
+    let removeBtn = isAdmin ? `<button class="emp-remove" onclick="removeEmp(event,'${name}')" title="Remove">&#x2715;</button>` : '';
+    btn.innerHTML = `<div class="emp-avatar">${initials(name)}</div><span class="emp-name">${name}${active?' ●':''}</span>${removeBtn}`;
+    grid.appendChild(btn);
+  });
+  updateButtons();
+}
+
+function renderWhoIsIn() {
+  const emps = getEmployees();
+  const state = getClockState();
+  const grid = document.getElementById('who-grid');
+  grid.innerHTML = '';
+  emps.forEach(name => {
+    const s = state[name];
+    const active = s && s.in && !s.out;
+    const div = document.createElement('div');
+    div.className = 'who-card' + (active?' active':' inactive');
+    div.innerHTML = `<div class="who-dot"></div><div><div class="who-info-name">${name}</div><div class="who-info-time">${active?'In since '+fmtTime(s.in):'Not clocked in'}</div></div>`;
+    grid.appendChild(div);
+  });
+}
+
+function selectEmp(name) {
+  selectedEmp = name;
+  activeTab = name;
+  renderEmpGrid();
+  renderTabs();
+  renderTable();
+  updateLiveTracker();
+}
+
+function removeEmp(e, name) {
+  e.stopPropagation();
+  if (!confirm('Remove '+name+'? Their records stay saved.')) return;
+  let emps = getEmployees().filter(n=>n!==name);
+  saveEmployees(emps);
+  if (selectedEmp===name) { selectedEmp=null; clearInterval(timerInterval); document.getElementById('tracker-banner').classList.remove('show'); }
+  if (activeTab===name) activeTab = emps[0]||null;
+  renderEmpGrid(); renderTabs(); renderTable(); renderWhoIsIn(); populateLoginDropdown();
+}
+
+function showAddForm() {
+  document.getElementById('add-form').classList.add('show');
+  document.getElementById('new-emp-input').focus();
+}
+function cancelAddForm() {
+  document.getElementById('add-form').classList.remove('show');
+  document.getElementById('new-emp-input').value='';
+}
+function saveNewEmp() {
+  const input = document.getElementById('new-emp-input');
+  const name = input.value.trim();
+  if (!name) return;
+  const emps = getEmployees();
+  if (emps.map(n=>n.toLowerCase()).includes(name.toLowerCase())) { alert(name+' already exists!'); return; }
+  emps.push(name);
+  saveEmployees(emps);
+  input.value='';
+  cancelAddForm();
+  if (!activeTab) activeTab = name;
+  renderEmpGrid(); renderTabs(); renderTable(); renderWhoIsIn(); populateLoginDropdown();
+}
+
+// ─── CLOCK IN/OUT ─────────────────────────────────────────
+function updateButtons() {
+  if (!selectedEmp) { document.getElementById('btn-in').disabled=true; document.getElementById('btn-out').disabled=true; return; }
+  const state = getClockState();
+  const active = state[selectedEmp] && state[selectedEmp].in && !state[selectedEmp].out;
+  document.getElementById('btn-in').disabled = !!active;
+  document.getElementById('btn-out').disabled = !active;
+}
+
+function clockIn() {
+  if (!selectedEmp) return;
+  const state = getClockState();
+  state[selectedEmp] = { in: Date.now(), out: null };
+  saveClockState(state);
+  updateButtons(); renderEmpGrid(); renderWhoIsIn(); updateLiveTracker(); renderTable();
+}
+
+function clockOut() {
+  if (!selectedEmp) return;
+  const state = getClockState();
+  if (!state[selectedEmp]||!state[selectedEmp].in) return;
+  const entry = { employee:selectedEmp, date:new Date().toDateString(), in:state[selectedEmp].in, out:Date.now(), id:Date.now()+Math.random() };
+  const records = getRecords(); records.push(entry); saveRecords(records);
+  state[selectedEmp] = {}; saveClockState(state);
+  updateButtons(); renderEmpGrid(); renderWhoIsIn(); updateLiveTracker(); renderTable();
+}
+
+// ─── SUMMARY ──────────────────────────────────────────────
+function renderTabs() {
+  const emps = getEmployees();
+  const tabsEl = document.getElementById('summary-tabs');
+  tabsEl.innerHTML='';
+  if (!emps.length) return;
+  if (!activeTab||!emps.includes(activeTab)) activeTab=emps[0];
+  // Admin sees all tabs; employee sees only own
+  const visible = isAdmin ? emps : emps.filter(n=>n===currentUser);
+  visible.forEach(name => {
+    const btn=document.createElement('button');
+    btn.className='tab-btn'+(activeTab===name?' active':'');
+    btn.textContent=name;
+    btn.onclick=()=>switchTab(name);
+    tabsEl.appendChild(btn);
+  });
+}
+
+function switchTab(emp) { activeTab=emp; renderTabs(); renderTable(); }
+
+function getWeekRange(offset) {
+  const now=new Date(), day=now.getDay();
+  const monday=new Date(now);
+  monday.setDate(now.getDate()-(day===0?6:day-1)+offset*7);
+  monday.setHours(0,0,0,0);
+  const sunday=new Date(monday);
+  sunday.setDate(monday.getDate()+6);
+  sunday.setHours(23,59,59,999);
+  return {start:monday,end:sunday};
+}
+
+function changeWeek(dir) { weekOffset+=dir; renderTable(); }
+
+function deleteEntry(id) {
+  saveRecords(getRecords().filter(r=>r.id!==id));
+  renderTable();
+}
+
+function clearWeek() {
+  if (!activeTab) return;
+  if (!confirm('Clear all entries for '+activeTab+' this week?')) return;
+  const range=getWeekRange(weekOffset);
+  saveRecords(getRecords().filter(r=>{
+    if(r.employee!==activeTab) return true;
+    const d=new Date(r.in);
+    return d<range.start||d>range.end;
+  }));
+  renderTable();
+}
+
+function renderTable() {
+  if (!activeTab) {
+    document.getElementById('entries-body').innerHTML='<tr><td colspan="5"><div class="empty-state">No employee selected</div></td></tr>';
+    document.getElementById('total-footer').style.display='none';
+    document.getElementById('stats-row').style.display='none';
+    return;
+  }
+  const range=getWeekRange(weekOffset);
+  document.getElementById('week-label').textContent=
+    range.start.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' – '+
+    range.end.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+
+  const records=getRecords()
+    .filter(r=>r.employee===activeTab&&new Date(r.in)>=range.start&&new Date(r.in)<=range.end)
+    .sort((a,b)=>a.in-b.in);
+
+  const tbody=document.getElementById('entries-body');
+  tbody.innerHTML='';
+
+  if (!records.length) {
+    tbody.innerHTML='<tr><td colspan="5"><div class="empty-state"><div class="empty-icon">&#128197;</div>No entries this week</div></td></tr>';
+    document.getElementById('total-footer').style.display='none';
+    document.getElementById('stats-row').style.display='none';
+    return;
+  }
+
+  let totalMs=0; const days=new Set();
+  records.forEach(r=>{
+    const ms=r.out?r.out-r.in:0; totalMs+=ms;
+    days.add(new Date(r.in).toDateString());
+    const tr=document.createElement('tr');
+    tr.innerHTML='<td>'+fmtDate(r.in)+'</td><td>'+fmtTime(r.in)+'</td><td>'+(r.out?fmtTime(r.out):'<span class="badge badge-active">Active</span>')+'</td><td>'+(r.out?fmtHours(r.out-r.in):'—')+'</td><td>'+(isAdmin?'<button class="del-btn" onclick="deleteEntry('+r.id+')" title="Remove">&#x2715;</button>':'')+'</td>';
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('stats-row').style.display='grid';
+  document.getElementById('stat-hours').innerHTML=fmtHoursDecimal(totalMs)+'<span class="stat-box-unit">h</span>';
+  document.getElementById('stat-days').innerHTML=days.size+'<span class="stat-box-unit">days</span>';
+  const avgMs = days.size>0 ? totalMs/days.size : 0;
+  document.getElementById('stat-avg').innerHTML=fmtHoursDecimal(avgMs)+'<span class="stat-box-unit">h</span>';
+  document.getElementById('total-footer').style.display='flex';
+  document.getElementById('total-val').textContent=fmtHours(totalMs);
+}
+
+// ─── ADMIN TOOLS ──────────────────────────────────────────
+function exportCSV() {
+  const records=getRecords().sort((a,b)=>a.in-b.in);
+  let csv='Employee,Date,Clock In,Clock Out,Hours\n';
+  records.forEach(r=>{
+    const hrs=r.out?((r.out-r.in)/3600000).toFixed(2):'';
+    csv+=`"${r.employee}","${fmtDate(r.in)}","${fmtTime(r.in)}","${r.out?fmtTime(r.out):'Active'}","${hrs}"\n`;
+  });
+  const blob=new Blob([csv],{type:'text/csv'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url;
+  a.download='RCB_Timesheet_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click(); URL.revokeObjectURL(url);
+}
+
+function showChangePassword() { document.getElementById('pwd-modal').classList.add('show'); document.getElementById('new-pwd-input').focus(); }
+function saveNewPassword() {
+  const pwd=document.getElementById('new-pwd-input').value.trim();
+  if (!pwd||pwd.length<4) { alert('Password must be at least 4 characters.'); return; }
+  const pwds=getPasswords(); pwds.employee=pwd; savePasswords(pwds);
+  closeModal('pwd-modal');
+  document.getElementById('new-pwd-input').value='';
+  alert('Employee password updated to: '+pwd);
+}
+
+function clearAllData() {
+  if (!confirm('Delete ALL timesheet records for everyone? This cannot be undone.')) return;
+  if (!confirm('Are you absolutely sure? All data will be lost.')) return;
+  localStorage.removeItem('rcb_records');
+  localStorage.removeItem('rcb_state');
+  renderTable(); renderEmpGrid(); renderWhoIsIn(); updateLiveTracker();
+  alert('All records cleared.');
+}
+
+function showAllThisWeek() {
+  const emps=getEmployees();
+  const range=getWeekRange(0);
+  const records=getRecords();
+  document.getElementById('report-week-label').textContent=
+    range.start.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' – '+
+    range.end.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  let html='';
+  emps.forEach(name=>{
+    const recs=records.filter(r=>r.employee===name&&new Date(r.in)>=range.start&&new Date(r.in)<=range.end);
+    const totalMs=recs.reduce((s,r)=>s+(r.out?r.out-r.in:0),0);
+    const days=new Set(recs.map(r=>new Date(r.in).toDateString())).size;
+    html+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="width:28px;height:28px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff">${initials(name)}</div>
+        <div><div style="font-size:14px;font-weight:500">${name}</div><div style="font-size:11px;color:var(--text2)">${days} day${days!==1?'s':''} worked</div></div>
+      </div>
+      <div style="font-family:'DM Mono',monospace;font-size:16px;color:var(--gold)">${fmtHours(totalMs)}</div>
+    </div>`;
+  });
+  if (!html) html='<p style="color:var(--text3);text-align:center;padding:1rem">No records this week</p>';
+  document.getElementById('report-body').innerHTML=html;
+  document.getElementById('report-modal').classList.add('show');
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+// ─── INIT ─────────────────────────────────────────────────
+setInterval(updateTopClock, 1000);
+updateTopClock();
+populateLoginDropdown();
+</script>
+</body>
+</html>
