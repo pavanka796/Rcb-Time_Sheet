@@ -250,7 +250,7 @@ tr:last-child td { border-bottom: none; }
     </div>
     <button class="login-btn" onclick="doLogin()">Sign In →</button>
     <p style="font-size:11px;color:var(--text3);text-align:center;margin-top:1.25rem;">
-      Admin CEO OF : <strong style="color:var(--gold)">Ram</strong> &nbsp;|&nbsp; Employee: <strong style="color:var(--text2)">rcb2026</strong>
+      Admin CEO OF : <strong style="color:var(--gold)">Ram</strong> &nbsp;|&nbsp; Employee: <strong style="color:var(--text2)">Please reach out to the pavan if you need a password</strong>
     </p>
   </div>
 </div>
@@ -423,7 +423,7 @@ const getRecords = () => { try { return JSON.parse(localStorage.getItem('rcb_rec
 const saveRecords = r => localStorage.setItem('rcb_records', JSON.stringify(r));
 const getClockState = () => { try { return JSON.parse(localStorage.getItem('rcb_state') || '{}'); } catch { return {}; }};
 const saveClockState = s => localStorage.setItem('rcb_state', JSON.stringify(s));
-const getPasswords = () => { try { return JSON.parse(localStorage.getItem('rcb_passwords') || '{"admin":"admin123","employee":"rcb2024"}'); } catch { return {admin:'admin123',employee:'rcb2024'}; }};
+const getPasswords = () => { try { return JSON.parse(localStorage.getItem('rcb_passwords') || '{"admin":"admin123","employee":"rcb2026"}'); } catch { return {admin:'admin123',employee:'rcb2026'}; }};
 const savePasswords = p => localStorage.setItem('rcb_passwords', JSON.stringify(p));
 
 // ─── HELPERS ──────────────────────────────────────────────
