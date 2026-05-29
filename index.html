@@ -148,6 +148,10 @@ tr:last-child td{border-bottom:none;}
 .who-info-name{font-size:13px;font-weight:500;}
 .who-info-time{font-size:11px;color:var(--text2);margin-top:2px;font-family:'DM Mono',monospace;}
 
+/* OVERNIGHT HINT */
+.overnight-hint{font-size:11px;color:var(--gold);background:var(--gold-bg);border:1px solid var(--gold-border);border-radius:7px;padding:6px 10px;margin-top:6px;display:none;}
+.overnight-hint.show{display:block;}
+
 /* ADMIN */
 .admin-section{margin-top:1.5rem;}
 .admin-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
@@ -269,14 +273,13 @@ tr:last-child td{border-bottom:none;}
         <div class="stat-box"><div class="stat-box-label">Avg per day</div><div class="stat-box-val" id="stat-avg">0<span class="stat-box-unit">h</span></div></div>
       </div>
       <table>
-        <thead><tr><th>Date</th><th>In</th><th>Out</th><th>Duration</th><th></th></tr></thead>
+        <thead><tr><th>Date (In)</th><th>In</th><th>Out</th><th>Duration</th><th></th></tr></thead>
         <tbody id="entries-body"></tbody>
       </table>
       <div class="total-footer" id="total-footer" style="display:none">
         <span class="total-footer-label">Week total</span>
         <span class="total-footer-val" id="total-val"></span>
       </div>
-      <!-- Admin only: add manual entry -->
       <button class="add-entry-btn" id="add-entry-btn" onclick="openEntryModal(null)">＋ Add manual entry for <span id="add-entry-name"></span></button>
     </div>
 
@@ -287,6 +290,7 @@ tr:last-child td{border-bottom:none;}
         <div class="admin-card" onclick="showChangePassword()"><div class="admin-card-icon">🔑</div><div><div class="admin-card-label">Change passwords</div><div class="admin-card-desc">Update employee PIN</div></div></div>
         <div class="admin-card" onclick="clearAllData()"><div class="admin-card-icon">🗑</div><div><div class="admin-card-label">Clear all data</div><div class="admin-card-desc">Wipe all records (careful!)</div></div></div>
         <div class="admin-card" onclick="showAllThisWeek()"><div class="admin-card-icon">📊</div><div><div class="admin-card-label">This week report</div><div class="admin-card-desc">Summary for all employees</div></div></div>
+        <div class="admin-card" onclick="openRequestSyncModal()"><div class="admin-card-icon">📲</div><div><div class="admin-card-label">Request sync code</div><div class="admin-card-desc">Get WhatsApp message to send</div></div></div>
       </div>
       <div class="import-card">
         <div class="import-card-title">📥 Import employee data</div>
@@ -311,7 +315,7 @@ tr:last-child td{border-bottom:none;}
         <select id="em-employee"></select>
       </div>
       <div class="field-group">
-        <div class="field-label">Date</div>
+        <div class="field-label">Clock-In Date</div>
         <input type="date" id="em-date"/>
       </div>
       <div class="field-group">
@@ -322,6 +326,10 @@ tr:last-child td{border-bottom:none;}
         <div class="field-label">Clock Out time</div>
         <input type="time" id="em-out" placeholder="Leave blank if still in"/>
       </div>
+      <!-- ★ NEW: overnight notice shown automatically -->
+      <div class="field-group full">
+        <div class="overnight-hint" id="em-overnight-hint">🌙 Overnight shift detected — clock-out will be recorded on the next day.</div>
+      </div>
       <div class="field-group full" id="em-duration-row" style="display:none">
         <div style="font-size:12px;color:var(--green-text);padding:6px 10px;background:var(--green-bg);border:1px solid var(--green-border);border-radius:7px;" id="em-duration-label"></div>
       </div>
@@ -330,6 +338,29 @@ tr:last-child td{border-bottom:none;}
     <div class="modal-btns">
       <button onclick="saveEntry()" style="background:var(--green-bg);border-color:var(--green-border);color:var(--green-text)">Save Entry</button>
       <button onclick="closeModal('entry-modal')" style="background:var(--surface2);border-color:var(--border);color:var(--text2)">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Request Sync Code Modal -->
+<div class="modal-overlay" id="request-sync-modal">
+  <div class="modal" style="max-width:440px;">
+    <h3>📲 Request sync code</h3>
+    <div class="modal-sub">Copy the message below and send it to your employees on WhatsApp.</div>
+
+    <div style="margin-bottom:14px;">
+      <div class="field-label">Who do you want to request from?</div>
+      <div id="request-sync-emp-btns" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;"></div>
+    </div>
+
+    <div style="margin-bottom:14px;">
+      <div class="field-label">Message preview</div>
+      <div id="request-sync-preview" style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;font-size:13px;color:var(--text);line-height:1.7;margin-top:6px;white-space:pre-wrap;"></div>
+    </div>
+
+    <div style="display:flex;gap:8px;">
+      <button id="request-sync-copy-btn" onclick="copyRequestSyncMsg()" style="flex:1;padding:11px;border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;border:1px solid var(--green-border);background:var(--green-bg);color:var(--green-text);">📋 Copy Message</button>
+      <button onclick="closeModal('request-sync-modal')" style="padding:11px 16px;border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--text2);">Close</button>
     </div>
   </div>
 </div>
@@ -359,7 +390,7 @@ tr:last-child td{border-bottom:none;}
 
 <script>
 let currentUser=null,isAdmin=false,selectedEmp=null,activeTab=null,weekOffset=0,timerInterval=null;
-let editingEntryId=null; // null = adding new, otherwise = editing
+let editingEntryId=null;
 
 // STORAGE
 const getEmployees=()=>{try{return JSON.parse(localStorage.getItem('rcb_employees')||'["Lakshmi","Harshitha"]');}catch{return["Lakshmi","Harshitha"];}};
@@ -380,6 +411,29 @@ const fmtHoursDecimal=ms=>(ms/3600000).toFixed(1);
 const fmtElapsed=ms=>{const s=Math.floor(ms/1000),h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=s%60;return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0');};
 function toISODate(ts){const d=new Date(ts);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function toTimeVal(ts){const d=new Date(ts);return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}
+
+// ★ KEY FIX: build timestamps aware of overnight shifts
+// If outTime < inTime (e.g. 03:00 < 20:00) it means clock-out is next day.
+function buildInOutTimestamps(dateVal, inVal, outVal) {
+  const inTs = new Date(dateVal + 'T' + inVal).getTime();
+  let outTs = null;
+  if (outVal) {
+    outTs = new Date(dateVal + 'T' + outVal).getTime();
+    // Overnight: out time-of-day is earlier than in time-of-day → add 24 h
+    if (outTs <= inTs) {
+      outTs += 24 * 60 * 60 * 1000;
+    }
+  }
+  return { inTs, outTs };
+}
+
+// Returns true if out-time string is "earlier" in the day than in-time string (overnight)
+function isOvernightShift(inVal, outVal) {
+  if (!inVal || !outVal) return false;
+  const [ih, im] = inVal.split(':').map(Number);
+  const [oh, om] = outVal.split(':').map(Number);
+  return (oh * 60 + om) < (ih * 60 + im);
+}
 
 // SYNC ENCODE/DECODE
 function encodeSyncCode(payload){
@@ -439,30 +493,27 @@ function openEntryModal(recordId){
   const modal=document.getElementById('entry-modal');
   const empSel=document.getElementById('em-employee');
 
-  // Populate employee dropdown
   empSel.innerHTML='';
   getEmployees().forEach(n=>{const o=document.createElement('option');o.value=n;o.textContent=n;empSel.appendChild(o);});
 
   document.getElementById('em-error').style.display='none';
   document.getElementById('em-duration-row').style.display='none';
+  document.getElementById('em-overnight-hint').classList.remove('show');
 
   if(recordId===null){
-    // Adding new
     document.getElementById('entry-modal-title').textContent='Add Manual Entry';
     document.getElementById('entry-modal-sub').textContent='Admin: add a clock-in/out for any employee on any date';
     empSel.value=activeTab||getEmployees()[0]||'';
-    // Default to today
     document.getElementById('em-date').value=toISODate(Date.now());
-    document.getElementById('em-in').value='09:00';
-    document.getElementById('em-out').value='17:00';
+    document.getElementById('em-in').value='20:00';
+    document.getElementById('em-out').value='03:00';
   } else {
-    // Editing existing
     const rec=getRecords().find(r=>r.id===recordId);
     if(!rec)return;
     document.getElementById('entry-modal-title').textContent='Edit Entry';
     document.getElementById('entry-modal-sub').textContent='Change the date or times for this record';
     empSel.value=rec.employee;
-    empSel.disabled=true; // can't change employee when editing
+    empSel.disabled=true;
     document.getElementById('em-date').value=toISODate(rec.in);
     document.getElementById('em-in').value=toTimeVal(rec.in);
     document.getElementById('em-out').value=rec.out?toTimeVal(rec.out):'';
@@ -471,8 +522,11 @@ function openEntryModal(recordId){
   updateDurationPreview();
   modal.classList.add('show');
 
-  // Live duration preview
-  ['em-date','em-in','em-out'].forEach(id=>document.getElementById(id).addEventListener('input',updateDurationPreview));
+  ['em-date','em-in','em-out'].forEach(id=>{
+    const el=document.getElementById(id);
+    el.removeEventListener('input',updateDurationPreview);
+    el.addEventListener('input',updateDurationPreview);
+  });
 }
 
 function updateDurationPreview(){
@@ -481,18 +535,20 @@ function updateDurationPreview(){
   const outVal=document.getElementById('em-out').value;
   const row=document.getElementById('em-duration-row');
   const lbl=document.getElementById('em-duration-label');
-  if(dateVal&&inVal&&outVal){
-    const inTs=new Date(dateVal+'T'+inVal).getTime();
-    const outTs=new Date(dateVal+'T'+outVal).getTime();
-    if(outTs>inTs){
-      row.style.display='block';
-      lbl.textContent='⏱ Duration: '+fmtHours(outTs-inTs);
-    } else {
-      row.style.display='block';
-      lbl.style.color='var(--red-text)';
-      lbl.textContent='⚠ Clock out must be after clock in';
-    }
-  } else { row.style.display='none'; }
+  const hint=document.getElementById('em-overnight-hint');
+
+  const overnight = isOvernightShift(inVal, outVal);
+  hint.classList.toggle('show', overnight && !!outVal);
+
+  if(dateVal && inVal && outVal){
+    const {inTs, outTs} = buildInOutTimestamps(dateVal, inVal, outVal);
+    // outTs is now always > inTs thanks to overnight correction
+    row.style.display='block';
+    lbl.style.color='var(--green-text)';
+    lbl.textContent='⏱ Duration: '+fmtHours(outTs-inTs)+(overnight?' (next day)':'');
+  } else {
+    row.style.display='none';
+  }
 }
 
 function saveEntry(){
@@ -504,22 +560,16 @@ function saveEntry(){
 
   if(!empName||!dateVal||!inVal){errEl.textContent='Please fill in employee, date and clock-in time.';errEl.style.display='block';return;}
 
-  const inTs=new Date(dateVal+'T'+inVal).getTime();
-  let outTs=null;
-  if(outVal){
-    outTs=new Date(dateVal+'T'+outVal).getTime();
-    if(outTs<=inTs){errEl.textContent='Clock out time must be after clock in time.';errEl.style.display='block';return;}
-  }
+  // ★ Use the overnight-aware helper — no more false errors
+  const {inTs, outTs} = buildInOutTimestamps(dateVal, inVal, outVal);
 
   errEl.style.display='none';
   const records=getRecords();
 
   if(editingEntryId===null){
-    // New record
     const newRec={employee:empName,date:new Date(inTs).toDateString(),in:inTs,out:outTs,id:inTs+Math.random()};
     records.push(newRec);
   } else {
-    // Update existing
     const idx=records.findIndex(r=>r.id===editingEntryId);
     if(idx>-1){
       records[idx]={...records[idx],date:new Date(inTs).toDateString(),in:inTs,out:outTs};
@@ -672,7 +722,6 @@ function clearWeek(){
   renderTable();
 }
 function renderTable(){
-  // Update "Add entry" button
   const addBtn=document.getElementById('add-entry-btn');
   if(isAdmin&&activeTab){
     addBtn.classList.add('show');
@@ -695,8 +744,14 @@ function renderTable(){
   records.forEach(r=>{
     const ms=r.out?r.out-r.in:0;totalMs+=ms;days.add(new Date(r.in).toDateString());
     const tr=document.createElement('tr');
+    // Show "(next day)" label in Out column for overnight shifts
+    let outDisplay='—';
+    if(r.out){
+      const sameDay=new Date(r.in).toDateString()===new Date(r.out).toDateString();
+      outDisplay=fmtTime(r.out)+(sameDay?'':' <span style="font-size:10px;color:var(--gold);background:var(--gold-bg);border:1px solid var(--gold-border);border-radius:4px;padding:1px 5px;margin-left:4px;">+1 day</span>');
+    }
     const actions=isAdmin?`<div class="btn-group"><button class="edit-btn" onclick="openEntryModal(${r.id})" title="Edit">✏️</button><button class="del-btn" onclick="deleteEntry(${r.id})" title="Delete">✕</button></div>`:'';
-    tr.innerHTML=`<td>${fmtDate(r.in)}</td><td>${fmtTime(r.in)}</td><td>${r.out?fmtTime(r.out):'<span class="badge-active">Active</span>'}</td><td>${r.out?fmtHours(r.out-r.in):'—'}</td><td>${actions}</td>`;
+    tr.innerHTML=`<td>${fmtDate(r.in)}</td><td>${fmtTime(r.in)}</td><td>${r.out?outDisplay:'<span class="badge-active">Active</span>'}</td><td>${r.out?fmtHours(r.out-r.in):'—'}</td><td>${actions}</td>`;
     tbody.appendChild(tr);
   });
   document.getElementById('stats-row').style.display='grid';
@@ -742,6 +797,48 @@ function showAllThisWeek(){
 function closeModal(id){
   document.getElementById(id).classList.remove('show');
   if(id==='entry-modal'){editingEntryId=null;document.getElementById('em-employee').disabled=false;}
+}
+
+// REQUEST SYNC CODE
+let requestSyncSelected=[];
+function openRequestSyncModal(){
+  requestSyncSelected=[...getEmployees()];
+  renderRequestSyncBtns();
+  updateRequestSyncPreview();
+  document.getElementById('request-sync-modal').classList.add('show');
+}
+function renderRequestSyncBtns(){
+  const emps=getEmployees();
+  const container=document.getElementById('request-sync-emp-btns');
+  container.innerHTML='';
+  emps.forEach(name=>{
+    const sel=requestSyncSelected.includes(name);
+    const btn=document.createElement('button');
+    btn.style.cssText=`padding:7px 14px;border-radius:99px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;border:1px solid;transition:all .12s;`;
+    if(sel){btn.style.background='var(--green-bg)';btn.style.borderColor='var(--green-border)';btn.style.color='var(--green-text)';}
+    else{btn.style.background='var(--surface2)';btn.style.borderColor='var(--border)';btn.style.color='var(--text2)';}
+    btn.textContent=(sel?'✓ ':'')+name;
+    btn.onclick=()=>{
+      if(requestSyncSelected.includes(name))requestSyncSelected=requestSyncSelected.filter(n=>n!==name);
+      else requestSyncSelected.push(name);
+      renderRequestSyncBtns();updateRequestSyncPreview();
+    };
+    container.appendChild(btn);
+  });
+}
+function updateRequestSyncPreview(){
+  const names=requestSyncSelected;
+  const preview=document.getElementById('request-sync-preview');
+  if(!names.length){preview.textContent='Please select at least one employee above.';return;}
+  const greeting=names.length===1?`Hi ${names[0]}`:`Hi ${names.join(' & ')}`;
+  const today=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+  preview.textContent=`${greeting},\n\nPlease send me your timesheet sync code today (${today}).\n\nSteps:\n1. Open the RAM Career Bridge TimeSheet app\n2. Log in with your name\n3. Tap "📋 Copy Code" from the purple box\n4. Paste and send it here on WhatsApp\n\nThank you!\n– Ram`;
+}
+function copyRequestSyncMsg(){
+  const text=document.getElementById('request-sync-preview').textContent;
+  const btn=document.getElementById('request-sync-copy-btn');
+  const flash=()=>{btn.textContent='✓ Copied! Now paste it in WhatsApp';btn.style.background='var(--blue-bg)';btn.style.borderColor='var(--blue-border)';btn.style.color='var(--blue-text)';setTimeout(()=>{btn.textContent='📋 Copy Message';btn.style.background='var(--green-bg)';btn.style.borderColor='var(--green-border)';btn.style.color='var(--green-text)';},3000);};
+  if(navigator.clipboard){navigator.clipboard.writeText(text).then(flash).catch(()=>{fb(text);flash();});}else{fb(text);flash();}
 }
 
 setInterval(updateTopClock,1000);updateTopClock();populateLoginDropdown();
