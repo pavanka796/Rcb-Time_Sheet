@@ -615,6 +615,11 @@ tr:last-child td{border-bottom:none;}
         </div>
 
         <div class="card">
+          <div class="section-label">Team Status</div>
+          <div class="who-grid" id="who-grid"></div>
+        </div>
+
+        <div class="card">
           <div class="section-label">Clock In / Out</div>
           <div class="emp-grid" id="emp-grid"></div>
           <button class="add-emp-btn" id="add-emp-btn" onclick="showAddForm()" style="display:none"><span style="font-size:16px;line-height:1">+</span> Add employee</button>
@@ -655,6 +660,16 @@ tr:last-child td{border-bottom:none;}
           <div class="pomodoro-controls">
             <button class="pom-btn pom-btn-start" id="pom-start-btn" onclick="pomToggle()">▶ Start</button>
             <button class="pom-btn pom-btn-reset" onclick="pomReset()">↺ Reset</button>
+          </div>
+        </div>
+
+        <!-- TASK CHECKLIST -->
+        <div class="card" id="task-card" style="display:none;">
+          <div class="section-label" style="margin-bottom:6px;">✅ Tonight's Checklist</div>
+          <div class="task-list" id="task-list"></div>
+          <div class="task-add-row">
+            <input type="text" id="task-input" placeholder="Add a task..." maxlength="60" onkeydown="if(event.key==='Enter')addTask()"/>
+            <button class="task-add-btn" onclick="addTask()">+ Add</button>
           </div>
         </div>
 
@@ -2112,9 +2127,7 @@ function openImportSyncModal(){
   document.getElementById('import-sync-input').value='';
   document.getElementById('import-sync-preview').style.display='none';
   document.getElementById('import-sync-error').style.display='none';
-  const btn=document.getElementById('import-confirm-btn');
-  btn.disabled=true;btn.style.opacity='0.4';btn.style.fontWeight='500';
-  _pendingImportPayload=null;
+  document.getElementById('import-confirm-btn').disabled=true;
   document.getElementById('import-sync-modal').classList.add('show');
   setTimeout(()=>document.getElementById('import-sync-input').focus(),100);
 }
@@ -2126,8 +2139,7 @@ function previewSyncCode(){
   const errEl=document.getElementById('import-sync-error');
   const prevEl=document.getElementById('import-sync-preview');
   errEl.style.display='none';prevEl.style.display='none';
-  const confirmBtn=document.getElementById('import-confirm-btn');
-  confirmBtn.disabled=true;confirmBtn.style.opacity='0.4';confirmBtn.style.fontWeight='500';
+  document.getElementById('import-confirm-btn').disabled=true;
   _pendingImportPayload=null;
   if(!code){errEl.textContent='Please paste a sync code first.';errEl.style.display='block';return;}
   const payload=decodeSyncCode(code);
@@ -2156,16 +2168,11 @@ function previewSyncCode(){
     `<br><em>Click "Import Records" to merge into the portal.</em>`;
   prevEl.style.display='block';
   _pendingImportPayload=payload;
-  const importBtn=document.getElementById('import-confirm-btn');
-  importBtn.disabled=false;
-  importBtn.style.opacity='1';
-  importBtn.style.fontWeight='700';
-  setTimeout(()=>importBtn.scrollIntoView({behavior:'smooth',block:'nearest'}),50);
+  document.getElementById('import-confirm-btn').disabled=false;
 }
 
 function importSyncCode(){
   if(!_pendingImportPayload){alert('Please preview first.');return;}
-  try{
   const payload=_pendingImportPayload;
   const emp=payload.emp;
 
@@ -2206,7 +2213,6 @@ function importSyncCode(){
     '✅ Import Complete!',
     `${emp}: ${newRecs.length} timesheet + ${newApps.length} app records merged`
   );
-  }catch(e){alert('Import failed: '+e.message);}
 }
 
 let toastTimeout=null;
@@ -2442,7 +2448,7 @@ function downloadEmpPDF(empName) {
 
   // ── SECTION: TIMESHEET (all records) ──
   doc.setFontSize(9); doc.setFont('helvetica','bold'); doc.setTextColor(212,168,67);
-  doc.text('#  TIMESHEET — ALL RECORDS', MARGIN, cY); cY += 5;
+  doc.text('⏱  TIMESHEET — ALL RECORDS', MARGIN, cY); cY += 5;
 
   const timesheetData = allRecs.map(r => {
     const dateStr = new Date(r.in).toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric',timeZone:'Asia/Kolkata'});
@@ -2483,7 +2489,7 @@ function downloadEmpPDF(empName) {
   // ── SECTION: APPLICATIONS PER CLIENT ──
   if(cY > H-60){doc.addPage();cY=15;}
   doc.setFontSize(9); doc.setFont('helvetica','bold'); doc.setTextColor(212,168,67);
-  doc.text('>>  JOB APPLICATIONS — PER CLIENT', MARGIN, cY); cY += 5;
+  doc.text('🏹  JOB APPLICATIONS — PER CLIENT', MARGIN, cY); cY += 5;
 
   // Build per-client per-day breakdown
   const clientTableData = [];
@@ -2538,7 +2544,7 @@ function downloadEmpPDF(empName) {
   // ── SECTION: DAILY APP LOG (recent) ──
   if(cY > H-60){doc.addPage();cY=15;}
   doc.setFontSize(9); doc.setFont('helvetica','bold'); doc.setTextColor(212,168,67);
-  doc.text('>>  DAILY APPLICATION LOG', MARGIN, cY); cY += 5;
+  doc.text('📅  DAILY APPLICATION LOG', MARGIN, cY); cY += 5;
 
   // Group logs by date
   const byDateClient = {};
