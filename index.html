@@ -615,11 +615,6 @@ tr:last-child td{border-bottom:none;}
         </div>
 
         <div class="card">
-          <div class="section-label">Team Status</div>
-          <div class="who-grid" id="who-grid"></div>
-        </div>
-
-        <div class="card">
           <div class="section-label">Clock In / Out</div>
           <div class="emp-grid" id="emp-grid"></div>
           <button class="add-emp-btn" id="add-emp-btn" onclick="showAddForm()" style="display:none"><span style="font-size:16px;line-height:1">+</span> Add employee</button>
@@ -660,16 +655,6 @@ tr:last-child td{border-bottom:none;}
           <div class="pomodoro-controls">
             <button class="pom-btn pom-btn-start" id="pom-start-btn" onclick="pomToggle()">▶ Start</button>
             <button class="pom-btn pom-btn-reset" onclick="pomReset()">↺ Reset</button>
-          </div>
-        </div>
-
-        <!-- TASK CHECKLIST -->
-        <div class="card" id="task-card" style="display:none;">
-          <div class="section-label" style="margin-bottom:6px;">✅ Tonight's Checklist</div>
-          <div class="task-list" id="task-list"></div>
-          <div class="task-add-row">
-            <input type="text" id="task-input" placeholder="Add a task..." maxlength="60" onkeydown="if(event.key==='Enter')addTask()"/>
-            <button class="task-add-btn" onclick="addTask()">+ Add</button>
           </div>
         </div>
 
