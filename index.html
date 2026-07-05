@@ -1256,7 +1256,7 @@ let editingEntryId=null,calYear=new Date().getFullYear(),calMonth=new Date().get
 let onBreak=false;
 
 // ── STORAGE ──
-const getEmployees=()=>{try{return JSON.parse(localStorage.getItem('rcb_employees')||'["Lakshmi","Harshitha","Pavan"]');}catch{return["Lakshmi","Harshitha","Pavan"];}};
+const getEmployees=()=>{try{return JSON.parse(localStorage.getItem('rcb_employees')||'["Lakshmi","Harshitha","Pavan","Sahithya"]');}catch{return["Lakshmi","Harshitha","Pavan","Sahithya"];}};
 const saveEmployees=l=>localStorage.setItem('rcb_employees',JSON.stringify(l));
 const getRecords=()=>{try{return JSON.parse(localStorage.getItem('rcb_records')||'[]');}catch{return[];}};
 const saveRecords=r=>localStorage.setItem('rcb_records',JSON.stringify(r));
