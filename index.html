@@ -1792,8 +1792,9 @@ function renderTable(){
     const ms=r.out?r.out-r.in:0;totalMs+=ms;days.add(new Date(r.in).toDateString());
     const tr=document.createElement('tr');
     let outDisplay='—';
-    if(r.out){const sameDay=new Date(r.in).toDateString()===new Date(r.out).toDateString();outDisplay=fmtTime(r.out)+(sameDay?'':' <span style="font-size:9px;color:var(--gold);background:var(--gold-bg);border:1px solid var(--gold-border);border-radius:3px;padding:1px 4px;margin-left:3px;">+1d</span>');}
-    const durCell=r.isLeave?`<span class="badge-leave">${r.leaveType||'Leave'}</span>`:r.out?fmtHours(r.out-r.in):'—';
+    if(r.out){const inMid=new Date(r.in);inMid.setHours(0,0,0,0);const outMid=new Date(r.out);outMid.setHours(0,0,0,0);const daysLater=Math.round((outMid-inMid)/86400000);outDisplay=fmtTime(r.out)+(daysLater>0?` <span style="font-size:9px;color:var(--gold);background:var(--gold-bg);border:1px solid var(--gold-border);border-radius:3px;padding:1px 4px;margin-left:3px;">+${daysLater}d</span>`:'');}
+    const durMsRow=r.out?r.out-r.in:0;
+    const durCell=r.isLeave?`<span class="badge-leave">${r.leaveType||'Leave'}</span>`:r.out?fmtHours(durMsRow)+(durMsRow>16*3600000?' <span title="Unusually long session — check for a missed clock-out" style="color:var(--co-f);">⚠</span>':''):'—';
     const noteCell=r.note?`<span style="font-size:10px;color:var(--text2);max-width:80px;display:inline-block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${r.note}">${r.note}</span>`:'';
     const actions=isAdmin?`<div class="btn-group"><button class="edit-btn" onclick="openEntryModal(${r.id})" title="Edit">✏️</button><button class="del-btn" onclick="deleteEntry(${r.id})" title="Delete">✕</button></div>`:'';
     tr.innerHTML=`<td>${fmtDate(r.in)}</td><td>${fmtTime(r.in)}</td><td>${r.out?outDisplay:'<span class="badge-active">Active</span>'}</td><td>${durCell}</td><td>${noteCell}</td><td>${actions}</td>`;
@@ -1858,7 +1859,7 @@ function buildPDF(empName,records,label){
   doc.setFont('helvetica','bold');doc.setTextColor(232,234,240);doc.text('Period:',16,60);
   doc.setFont('helvetica','normal');doc.setTextColor(138,148,168);doc.text(label,45,60);
   const leaveRequests=getLeaveRequests()[empName]||[];
-  const tableData=records.map(r=>{const sameDay=r.out?new Date(r.in).toDateString()===new Date(r.out).toDateString():true;const outStr=r.out?fmtTime(r.out)+(sameDay?'':' (+1 day)'):'—';const dur=r.isLeave?(r.leaveType||'Leave')+' (8h paid)':r.out?fmtHours(r.out-r.in):'Active';return[fmtDate(r.in),fmtTime(r.in),outStr,dur,r.note||''];});
+  const tableData=records.map(r=>{const inMid=new Date(r.in);inMid.setHours(0,0,0,0);const outMid=r.out?new Date(r.out):null;if(outMid)outMid.setHours(0,0,0,0);const daysLater=r.out?Math.round((outMid-inMid)/86400000):0;const outStr=r.out?fmtTime(r.out)+(daysLater>0?' (+'+daysLater+'d)':''):'—';const durMs=r.out?r.out-r.in:0;const dur=r.isLeave?(r.leaveType||'Leave')+' (8h paid)':r.out?fmtHours(durMs)+(durMs>16*3600000?' ⚠':''):'Active';return[fmtDate(r.in),fmtTime(r.in),outStr,dur,r.note||''];});
   doc.autoTable({head:[['Date','Clock In','Clock Out','Duration','Shift Note']],body:tableData,startY:70,theme:'grid',styles:{font:'helvetica',fontSize:8,cellPadding:3,textColor:[200,205,215],lineColor:[46,58,80],fillColor:[25,32,48]},headStyles:{fillColor:[15,20,35],textColor:[138,148,168],fontStyle:'bold',fontSize:7},alternateRowStyles:{fillColor:[35,44,60]},columnStyles:{0:{cellWidth:34},1:{cellWidth:22,halign:'center'},2:{cellWidth:28,halign:'center'},3:{cellWidth:25,textColor:[109,204,154],fontStyle:'bold',halign:'center'},4:{cellWidth:81,fontSize:6,overflow:'linebreak'}},margin:{left:10,right:10},tableWidth:'wrap'});
   const fY=doc.lastAutoTable.finalY+5;
   const totalMs=records.reduce((s,r)=>s+(r.out?r.out-r.in:0),0),days=new Set(records.filter(r=>!r.isLeave).map(r=>new Date(r.in).toDateString())).size,leaveCount=records.filter(r=>r.isLeave).length;
@@ -1949,7 +1950,7 @@ const getClients=()=>{try{return JSON.parse(localStorage.getItem('rcb_clients')|
 const saveClients=c=>localStorage.setItem('rcb_clients',JSON.stringify(c));
 const getAppLogs=()=>{try{return JSON.parse(localStorage.getItem('rcb_applogs')||'[]');}catch{return[];}};
 const saveAppLogs=l=>localStorage.setItem('rcb_applogs',JSON.stringify(l));
-function ensureDefaultClients(){if(getClients().length===0){saveClients([{id:'c1',name:'Client A',target:30,color:'#5b8ef0'},{id:'c2',name:'Client B',target:30,color:'#4caf7d'},{id:'c3',name:'Client C',target:30,color:'#a855f7'}]);}}
+function ensureDefaultClients(){if(getClients().length===0){saveClients([{id:'c1',name:'Goutham Kumar',target:30,color:'#5b8ef0'},{id:'c2',name:'Swetha N',target:30,color:'#4caf7d'},{id:'c3',name:'Sai Deepthi',target:30,color:'#a855f7'}]);}}
 function todayStr(){return toISODate(Date.now());}
 function getLogsFor(empName,dateStr){return getAppLogs().filter(l=>l.employee===empName&&l.date===dateStr);}
 function getCountFor(empName,clientId,dateStr){const log=getAppLogs().find(l=>l.employee===empName&&l.clientId===clientId&&l.date===dateStr);return log?log.count:0;}
@@ -2752,8 +2753,12 @@ function downloadEmpPDF(empName) {
   const timesheetData = allRecs.map(r => {
     const dateStr = new Date(r.in).toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric',timeZone:'Asia/Kolkata'});
     const inStr = new Date(r.in).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Kolkata'});
-    const outStr = r.out ? new Date(r.out).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Kolkata'}) : (r.isLeave?'Leave':'Active');
-    const dur = r.isLeave ? (r.leaveType||'Leave') : (r.out ? fmtHours(r.out-r.in) : '—');
+    const inMidnight = new Date(r.in); inMidnight.setHours(0,0,0,0);
+    const outMidnight = r.out ? new Date(r.out) : null; if(outMidnight) outMidnight.setHours(0,0,0,0);
+    const daysLater = r.out ? Math.round((outMidnight-inMidnight)/86400000) : 0;
+    const outStr = r.out ? new Date(r.out).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Kolkata'})+(daysLater>0?' (+'+daysLater+'d)':'') : (r.isLeave?'Leave':'Active');
+    const durMs = r.out?r.out-r.in:0;
+    const dur = r.isLeave ? (r.leaveType||'Leave') : (r.out ? fmtHours(durMs)+(durMs>16*3600000?' ⚠':'') : '—');
     const note = r.note ? r.note.slice(0,35)+(r.note.length>35?'…':'') : '';
     return [dateStr, inStr, outStr, dur, note];
   });
