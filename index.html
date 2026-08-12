@@ -1566,7 +1566,7 @@ function startApp(){
   document.getElementById('leave-request-btn').style.display=isAdmin?'none':'block';const _an=document.getElementById('admin-nav');if(_an)_an.style.display=isAdmin?'block':'none';const _sr=document.getElementById('sidebar-role');if(_sr)_sr.textContent=isAdmin?'Administrator':'Employee';const _pb=document.getElementById('pdf-topbar-btn');if(_pb)_pb.style.display=(!isAdmin)?'flex':'none';
   if(!isAdmin){selectedEmp=currentUser;activeTab=currentUser;}
   else{const e=getEmployees();selectedEmp=e[0]||null;activeTab=e[0]||null;}
-  ensureDefaultClients();
+  migrateOldClientNames();ensureDefaultClients();
   renderEmpGrid();renderTabs();renderTable();renderWhoIsIn();updateButtons();updateStatusBoard();updateWeeklyProgress();
   renderCalendar();renderDeadlines();renderEfficiency();updateNetworkStatus();renderClientCards();renderPlannedLeaveList();
   initNightFeatures();startTimerLoop();
@@ -2031,6 +2031,18 @@ const getClients=()=>{try{return JSON.parse(localStorage.getItem('rcb_clients')|
 const saveClients=c=>localStorage.setItem('rcb_clients',JSON.stringify(c));
 const getAppLogs=()=>{try{return JSON.parse(localStorage.getItem('rcb_applogs')||'[]');}catch{return[];}};
 const saveAppLogs=l=>localStorage.setItem('rcb_applogs',JSON.stringify(l));
+function migrateOldClientNames(){
+  const clients=getClients();if(!clients.length)return;
+  const oldSets=[['Client A','Client B','Client C'],['Goutham Kumar','Swetha N','Sai Deepthi']];
+  const names=clients.map(c=>c.name);
+  const isOld=oldSets.some(set=>set.every(n=>names.includes(n)))&&clients.length<=3;
+  if(!isOld)return;
+  const newNames=['Neeraj Borra','Hemanth K','Rahul Karri','Goutham Kumar','Pavan K'];
+  const newColors=['#5b8ef0','#4caf7d','#a855f7','#e05c5c','#d4a843'];
+  clients.forEach((c,i)=>{if(i<3)c.name=newNames[i];});
+  for(let i=clients.length;i<5;i++){clients.push({id:'c'+(i+1),name:newNames[i],target:30,color:newColors[i]});}
+  saveClients(clients);
+}
 function ensureDefaultClients(){if(getClients().length===0){saveClients([{id:'c1',name:'Neeraj Borra',target:30,color:'#5b8ef0'},{id:'c2',name:'Hemanth K',target:30,color:'#4caf7d'},{id:'c3',name:'Rahul Karri',target:30,color:'#a855f7'},{id:'c4',name:'Goutham Kumar',target:30,color:'#e05c5c'},{id:'c5',name:'Pavan K',target:30,color:'#d4a843'}]);}}
 function todayStr(){return toISODate(Date.now());}
 function getLogsFor(empName,dateStr){return getAppLogs().filter(l=>l.employee===empName&&l.date===dateStr);}
