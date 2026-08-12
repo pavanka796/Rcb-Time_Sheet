@@ -784,9 +784,10 @@ tbody tr:hover td{background:var(--panel2);}
         <div class="tonight-goal-text"><span id="tonight-done-text">0 done</span><span id="tonight-remaining-text">0 to go</span></div>
       </div>
       <div class="pdf-card" id="pdf-card">
-        <div><div class="pdf-card-title">📄 Weekly Report PDF</div><div class="pdf-card-desc">Timesheet + applications · send to Ram every Friday</div></div>
+        <div><div class="pdf-card-title">📄 Report PDF</div><div class="pdf-card-desc">Timesheet + applications · send to Ram every Friday</div></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          <button class="pdf-btn" onclick="downloadMyPDF()">↓ Download PDF</button>
+          <button class="pdf-btn" onclick="downloadMyPDF()">↓ Week PDF</button>
+          <button class="pdf-btn" onclick="downloadMyMonthPDF()">↓ Month PDF</button>
           <button class="pdf-btn green" onclick="openSyncCodeModal()">📋 Get Sync Code</button>
         </div>
       </div>
@@ -956,7 +957,8 @@ tbody tr:hover td{background:var(--panel2);}
       <div class="sheet-header">
         <div class="sheet-tabs" id="summary-tabs"></div>
         <div class="sheet-actions">
-          <button class="sh-btn sky" onclick="downloadWeekPDF()">↓ PDF</button>
+          <button class="sh-btn sky" onclick="downloadWeekPDF()" title="Download report for the week shown below">↓ Week PDF</button>
+          <button class="sh-btn sky" onclick="downloadMonthPDF()" title="Download report for the current calendar month">↓ Month PDF</button>
           <button class="sh-btn green" id="add-entry-trigger" onclick="openEntryModal(null)" style="display:none;">＋ Add Entry</button>
           <button class="sh-btn red" onclick="clearWeek()">✕ Clear Week</button>
         </div>
@@ -965,6 +967,11 @@ tbody tr:hover td{background:var(--panel2);}
         <button onclick="changeWeek(-1)">‹</button>
         <div class="week-label" id="week-label"></div>
         <button onclick="changeWeek(1)">›</button>
+      </div>
+      <div class="week-nav-row" style="opacity:.85;">
+        <button onclick="changeMonth(-1)">‹</button>
+        <div class="week-label" id="month-label">📅 Month for "Month PDF" download</div>
+        <button onclick="changeMonth(1)">›</button>
       </div>
       <div class="stats-row" id="stats-row">
         <div class="stat-box"><div class="stat-box-label">Total hours</div><div class="stat-box-val" id="stat-hours">0<span class="stat-box-unit">h</span></div></div>
@@ -1115,7 +1122,7 @@ tbody tr:hover td{background:var(--panel2);}
         </div>
       </div>
       <div style="background:var(--sk-d);border:1px solid var(--sk-e);border-radius:10px;padding:12px 16px;font-size:12px;color:var(--sk-f);margin-top:14px;line-height:1.6;">
-        💡 Thu/Fri entries: 8 PM → 3 AM overnight shifts are auto-corrected — no manual date change needed.
+        💡 5 PM → 5 AM overnight shifts are auto-corrected — no manual date change needed.
       </div>
     </div>
 
@@ -1273,7 +1280,7 @@ tbody tr:hover td{background:var(--panel2);}
 // ══════════════════════════════════════════════════════════════
 //  STATE
 // ══════════════════════════════════════════════════════════════
-let currentUser=null,isAdmin=false,selectedEmp=null,activeTab=null,weekOffset=0,timerInterval=null;
+let currentUser=null,isAdmin=false,selectedEmp=null,activeTab=null,weekOffset=0,monthOffset=0,timerInterval=null;
 let editingEntryId=null,calYear=new Date().getFullYear(),calMonth=new Date().getMonth();
 let onBreak=false;
 
@@ -1329,7 +1336,7 @@ function updateShiftPhase(){
   const ist=new Date().toLocaleString('en-US',{timeZone:'Asia/Kolkata',hour:'numeric',hour12:false});
   const h=parseInt(ist);
   let color='#5b8ef0';
-  if(h>=20||h<0)color='#d4a843';
+  if(h>=17||h<0)color='#d4a843';
   if(h>=0&&h<3)color='#2a3a70';
   if(h>=3&&h<8)color='#4caf7d';
   document.documentElement.style.setProperty('--shift-accent',color);
@@ -1770,7 +1777,30 @@ function getWeekRange(offset){
   const sunday=new Date(monday);sunday.setDate(monday.getDate()+6);sunday.setHours(23,59,59,999);
   return{start:monday,end:sunday};
 }
+function getMonthRange(offset){
+  const now=new Date();
+  const start=new Date(now.getFullYear(),now.getMonth()+offset,1,0,0,0,0);
+  const end=new Date(now.getFullYear(),now.getMonth()+offset+1,0,23,59,59,999);
+  return{start,end};
+}
+function getMonthRecordsFor(empName,offset){
+  const range=getMonthRange(offset);
+  return getRecords().filter(r=>r.employee===empName&&new Date(r.in)>=range.start&&new Date(r.in)<=range.end).sort((a,b)=>a.in-b.in);
+}
+function getMonthlyAppTotals(empName,offset){
+  const range=getMonthRange(offset);
+  const logs=getAppLogs().filter(l=>l.employee===empName),clients=getClients(),result={};
+  clients.forEach(c=>{result[c.id]={name:c.name,target:c.target,color:c.color,total:0,days:{}};});
+  logs.forEach(l=>{const d=new Date(l.ts||Date.now());if(d>=range.start&&d<=range.end&&result[l.clientId]){result[l.clientId].total+=l.count;result[l.clientId].days[l.date]=(result[l.clientId].days[l.date]||0)+l.count;}});
+  return result;
+}
 function changeWeek(dir){weekOffset+=dir;renderTable();}
+function changeMonth(dir){monthOffset+=dir;updateMonthLabel();}
+function updateMonthLabel(){
+  const el=document.getElementById('month-label');if(!el)return;
+  const range=getMonthRange(monthOffset);
+  el.textContent=range.start.toLocaleDateString('en-US',{month:'long',year:'numeric'})+(monthOffset===0?' (current)':'');
+}
 function deleteEntry(id){if(!confirm('Delete this entry?'))return;saveRecords(getRecords().filter(r=>r.id!==id));renderTable();renderCalendar();updateWeeklyProgress();}
 function clearWeek(){
   if(!activeTab)return;if(!confirm('Clear all entries for '+activeTab+' this week?'))return;
@@ -1779,6 +1809,7 @@ function clearWeek(){
   renderTable();renderCalendar();updateWeeklyProgress();
 }
 function renderTable(){
+  updateMonthLabel();
   const addBtn=document.getElementById('add-entry-btn');
   if(isAdmin&&activeTab){addBtn.classList.add('show');document.getElementById('add-entry-name').textContent=activeTab;}else addBtn.classList.remove('show');
   if(!activeTab){document.getElementById('entries-body').innerHTML='<tr><td colspan="6"><div class="empty-state">No employee selected</div></td></tr>';document.getElementById('total-footer').style.display='none';document.getElementById('stats-row').style.display='none';return;}
@@ -1847,6 +1878,56 @@ function getWeekRecordsFor(empName,off){
   const range=getWeekRange(off!==undefined?off:weekOffset);
   return getRecords().filter(r=>r.employee===empName&&new Date(r.in)>=range.start&&new Date(r.in)<=range.end).sort((a,b)=>a.in-b.in);
 }
+function buildMonthPDF(empName,records,label,offset){
+  const{jsPDF}=window.jspdf,doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'}),W=doc.internal.pageSize.getWidth();
+  doc.setFillColor(5,5,10);doc.rect(0,0,W,40,'F');
+  doc.setTextColor(212,168,67);doc.setFontSize(17);doc.setFont('helvetica','bold');doc.text('RAM CAREER BRIDGE',W/2,14,{align:'center'});
+  doc.setFontSize(9);doc.setTextColor(138,148,168);doc.setFont('helvetica','normal');doc.text('IT Solutions · US & India Remote Team',W/2,21,{align:'center'});
+  doc.setFontSize(8);doc.setTextColor(80,90,110);doc.text('Monthly Timesheet Report',W/2,27,{align:'center'});
+  doc.setFillColor(25,32,48);doc.rect(10,43,W-20,22,'F');doc.setDrawColor(46,58,80);doc.rect(10,43,W-20,22,'S');
+  doc.setFontSize(10);doc.setFont('helvetica','bold');doc.setTextColor(232,234,240);doc.text('Employee:',16,52);
+  doc.setFont('helvetica','normal');doc.setTextColor(212,168,67);doc.text(empName,45,52);
+  doc.setFont('helvetica','bold');doc.setTextColor(232,234,240);doc.text('Month:',16,60);
+  doc.setFont('helvetica','normal');doc.setTextColor(138,148,168);doc.text(label,45,60);
+  const leaveRequests=getLeaveRequests()[empName]||[];
+  const tableData=records.map(r=>{const inMid=new Date(r.in);inMid.setHours(0,0,0,0);const outMid=r.out?new Date(r.out):null;if(outMid)outMid.setHours(0,0,0,0);const daysLater=r.out?Math.round((outMid-inMid)/86400000):0;const outStr=r.out?fmtTime(r.out)+(daysLater>0?' (+'+daysLater+'d)':''):'—';const durMs=r.out?r.out-r.in:0;const dur=r.isLeave?(r.leaveType||'Leave')+' (8h paid)':r.out?fmtHours(durMs)+(durMs>16*3600000?' ⚠':''):'Active';return[fmtDate(r.in),fmtTime(r.in),outStr,dur,r.note||''];});
+  doc.autoTable({head:[['Date','Clock In','Clock Out','Duration','Shift Note']],body:tableData.length?tableData:[['No records','—','—','—','—']],startY:70,theme:'grid',styles:{font:'helvetica',fontSize:8,cellPadding:3,textColor:[200,205,215],lineColor:[46,58,80],fillColor:[25,32,48]},headStyles:{fillColor:[15,20,35],textColor:[138,148,168],fontStyle:'bold',fontSize:7},alternateRowStyles:{fillColor:[35,44,60]},columnStyles:{0:{cellWidth:34},1:{cellWidth:22,halign:'center'},2:{cellWidth:28,halign:'center'},3:{cellWidth:25,textColor:[109,204,154],fontStyle:'bold',halign:'center'},4:{cellWidth:81,fontSize:6,overflow:'linebreak'}},margin:{left:10,right:10},tableWidth:'wrap'});
+  const fY=doc.lastAutoTable.finalY+5;
+  const totalMs=records.reduce((s,r)=>s+(r.out?r.out-r.in:0),0),days=new Set(records.filter(r=>!r.isLeave).map(r=>new Date(r.in).toDateString())).size,leaveCount=records.filter(r=>r.isLeave).length;
+  doc.setFillColor(15,22,38);doc.rect(10,fY,W-20,24,'F');doc.setDrawColor(46,58,80);doc.rect(10,fY,W-20,24,'S');
+  doc.setFontSize(9);doc.setFont('helvetica','bold');doc.setTextColor(138,148,168);
+  doc.text('HOURS WORKED:',16,fY+8);doc.setTextColor(212,168,67);doc.text(fmtHours(totalMs),58,fY+8);
+  doc.setTextColor(138,148,168);doc.text('DAYS:',100,fY+8);doc.setTextColor(212,168,67);doc.text(days+'',120,fY+8);
+  doc.setTextColor(138,148,168);doc.text('LEAVE DAYS:',135,fY+8);doc.setTextColor(255,152,0);doc.text(leaveCount+'',165,fY+8);
+  if(leaveRequests.length){doc.setFontSize(8);doc.setTextColor(180,160,255);doc.text('Planned leave: '+leaveRequests.map(l=>l.date+(l.reason?' ('+l.reason+')':'')).join(', '),16,fY+18);}
+  doc.setFontSize(7);doc.setTextColor(60,70,90);doc.text('RAM CAREER BRIDGE · Confidential · Shift: 5:00 PM – 5:00 AM IST (1hr break)',W/2,doc.internal.pageSize.getHeight()-8,{align:'center'});
+  // Applications page
+  doc.addPage();
+  doc.setFillColor(5,5,10);doc.rect(0,0,W,30,'F');
+  doc.setTextColor(212,168,67);doc.setFontSize(14);doc.setFont('helvetica','bold');doc.text('JOB APPLICATIONS REPORT',W/2,13,{align:'center'});
+  doc.setFontSize(8);doc.setTextColor(138,148,168);doc.setFont('helvetica','normal');doc.text(empName+' · '+label,W/2,21,{align:'center'});
+  const appTotals=getMonthlyAppTotals(empName,offset);const clients=getClients();let cY=36;
+  const range=getMonthRange(offset),daysInMonth=Math.round((range.end-range.start)/86400000)+1;
+  const tableData2=clients.map(c=>{const data=appTotals[c.id]||{total:0,target:c.target};const monthTarget=c.target*daysInMonth;const pct=monthTarget>0?Math.round((data.total/monthTarget)*100)+'%':'—';return[c.name,data.total+'',c.target+'/day',monthTarget+' mo',pct];});
+  const grandTotal=clients.reduce((s,c)=>{const d=appTotals[c.id];return s+(d?d.total:0);},0);
+  doc.autoTable({head:[['Client','Apps This Month','Daily Target','Monthly Target','Achieved']],body:tableData2.length?tableData2:[['No clients configured','—','—','—','—']],startY:cY,theme:'grid',styles:{font:'helvetica',fontSize:9,cellPadding:4,textColor:[200,205,215],lineColor:[46,58,80],fillColor:[25,32,48]},headStyles:{fillColor:[15,20,35],textColor:[138,148,168],fontStyle:'bold',fontSize:8},alternateRowStyles:{fillColor:[35,44,60]},columnStyles:{0:{cellWidth:70},1:{cellWidth:32,textColor:[109,204,154],fontStyle:'bold',halign:'center'},2:{cellWidth:30,halign:'center'},3:{cellWidth:32,halign:'center'},4:{cellWidth:26,halign:'center'}},margin:{left:10,right:10},tableWidth:'wrap'});
+  cY=doc.lastAutoTable.finalY+6;
+  doc.setFillColor(15,22,38);doc.rect(10,cY,W-20,14,'F');doc.setDrawColor(46,58,80);doc.rect(10,cY,W-20,14,'S');
+  doc.setFontSize(10);doc.setFont('helvetica','bold');doc.setTextColor(212,168,67);doc.text('TOTAL APPLICATIONS THIS MONTH: '+grandTotal,W/2,cY+9,{align:'center'});
+  return doc;
+}
+function downloadMonthPDF(){
+  if(!activeTab)return;const recs=getMonthRecordsFor(activeTab,monthOffset);
+  const range=getMonthRange(monthOffset),label=range.start.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+  if(!recs.length){alert('No records for '+activeTab+' in '+label+'.');return;}
+  safePDFDownload(buildMonthPDF(activeTab,recs,label,monthOffset),'RCB_Monthly_'+activeTab.replace(/\s+/g,'_')+'_'+label.replace(/\s+/g,'_')+'.pdf');
+}
+function downloadMyMonthPDF(){
+  if(!currentUser||isAdmin)return;const recs=getMonthRecordsFor(currentUser,monthOffset);
+  const range=getMonthRange(monthOffset),label=range.start.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+  if(!recs.length){alert('No records in '+label+'.');return;}
+  safePDFDownload(buildMonthPDF(currentUser,recs,label,monthOffset),'RCB_Monthly_'+currentUser.replace(/\s+/g,'_')+'_'+label.replace(/\s+/g,'_')+'.pdf');
+}
 function buildPDF(empName,records,label){
   const{jsPDF}=window.jspdf,doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'}),W=doc.internal.pageSize.getWidth();
   doc.setFillColor(5,5,10);doc.rect(0,0,W,40,'F');
@@ -1869,7 +1950,7 @@ function buildPDF(empName,records,label){
   doc.setTextColor(138,148,168);doc.text('DAYS:',100,fY+8);doc.setTextColor(212,168,67);doc.text(days+'',120,fY+8);
   doc.setTextColor(138,148,168);doc.text('LEAVE DAYS:',135,fY+8);doc.setTextColor(255,152,0);doc.text(leaveCount+'',165,fY+8);
   if(leaveRequests.length){doc.setFontSize(8);doc.setTextColor(180,160,255);doc.text('Planned leave: '+leaveRequests.map(l=>l.date+(l.reason?' ('+l.reason+')':'')).join(', '),16,fY+18);}
-  doc.setFontSize(7);doc.setTextColor(60,70,90);doc.text('RAM CAREER BRIDGE · Confidential · Shift: 8:00 PM – 5:00 AM IST (1hr break)',W/2,doc.internal.pageSize.getHeight()-8,{align:'center'});
+  doc.setFontSize(7);doc.setTextColor(60,70,90);doc.text('RAM CAREER BRIDGE · Confidential · Shift: 5:00 PM – 5:00 AM IST (1hr break)',W/2,doc.internal.pageSize.getHeight()-8,{align:'center'});
   // Add applications page
   doc.addPage();
   doc.setFillColor(5,5,10);doc.rect(0,0,W,30,'F');
@@ -1950,7 +2031,7 @@ const getClients=()=>{try{return JSON.parse(localStorage.getItem('rcb_clients')|
 const saveClients=c=>localStorage.setItem('rcb_clients',JSON.stringify(c));
 const getAppLogs=()=>{try{return JSON.parse(localStorage.getItem('rcb_applogs')||'[]');}catch{return[];}};
 const saveAppLogs=l=>localStorage.setItem('rcb_applogs',JSON.stringify(l));
-function ensureDefaultClients(){if(getClients().length===0){saveClients([{id:'c1',name:'Goutham Kumar',target:30,color:'#5b8ef0'},{id:'c2',name:'Swetha N',target:30,color:'#4caf7d'},{id:'c3',name:'Sai Deepthi',target:30,color:'#a855f7'}]);}}
+function ensureDefaultClients(){if(getClients().length===0){saveClients([{id:'c1',name:'Neeraj Borra',target:30,color:'#5b8ef0'},{id:'c2',name:'Hemanth K',target:30,color:'#4caf7d'},{id:'c3',name:'Rahul Karri',target:30,color:'#a855f7'},{id:'c4',name:'Goutham Kumar',target:30,color:'#e05c5c'},{id:'c5',name:'Pavan K',target:30,color:'#d4a843'}]);}}
 function todayStr(){return toISODate(Date.now());}
 function getLogsFor(empName,dateStr){return getAppLogs().filter(l=>l.employee===empName&&l.date===dateStr);}
 function getCountFor(empName,clientId,dateStr){const log=getAppLogs().find(l=>l.employee===empName&&l.clientId===clientId&&l.date===dateStr);return log?log.count:0;}
@@ -2129,7 +2210,7 @@ function drawBridge(){
   ctx.fillStyle='#071a0a';
   ctx.beginPath();ctx.moveTo(0,H*0.62);ctx.lineTo(0,H*0.47);ctx.lineTo(W*0.035,H*0.44);ctx.lineTo(W*0.06,H*0.51);ctx.lineTo(W*0.09,H*0.47);ctx.lineTo(W*0.12,H*0.53);ctx.lineTo(W*0.155,H*0.62);ctx.closePath();ctx.fill();
   ctx.fillStyle='#3ddd6e';ctx.font=`bold ${Math.max(8,W*0.016)}px sans-serif`;ctx.textAlign='center';
-  ctx.fillText('START',W*0.07,H*0.565);ctx.fillStyle='rgba(60,200,100,0.6)';ctx.font=`${Math.max(7,W*0.011)}px sans-serif`;ctx.fillText('08:00 PM',W*0.07,H*0.61);
+  ctx.fillText('START',W*0.07,H*0.565);ctx.fillStyle='rgba(60,200,100,0.6)';ctx.font=`${Math.max(7,W*0.011)}px sans-serif`;ctx.fillText('05:00 PM',W*0.07,H*0.61);
   // India flag
   ctx.strokeStyle='#22c55e';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(W*0.08,H*0.43);ctx.lineTo(W*0.08,H*0.47);ctx.stroke();
   ctx.fillStyle='#22c55e';ctx.beginPath();ctx.moveTo(W*0.08,H*0.43);ctx.lineTo(W*0.085,H*0.45);ctx.lineTo(W*0.08,H*0.47);ctx.closePath();ctx.fill();
@@ -2530,7 +2611,7 @@ function updateNightBanner(){
   banner.classList.add('show');
   const now=new Date(),istNow=new Date(now.toLocaleString('en-US',{timeZone:'Asia/Kolkata'})),istH=istNow.getHours();
   let end=new Date(istNow);const cdEl=document.getElementById('shift-countdown');
-  if(istH<3){end.setHours(5,0,0,0);}else if(istH>=20){end=new Date(istNow);end.setDate(end.getDate()+1);end.setHours(5,0,0,0);}
+  if(istH<5){end.setHours(5,0,0,0);}else if(istH>=17){end=new Date(istNow);end.setDate(end.getDate()+1);end.setHours(5,0,0,0);}
   else{if(cdEl){cdEl.textContent='Off shift';cdEl.className='shift-countdown';}return;}
   const diff=end-istNow;if(diff<=0){if(cdEl)cdEl.textContent='Shift over! 🎉';return;}
   const hLeft=Math.floor(diff/3600000),mLeft=Math.floor((diff%3600000)/60000);
@@ -2624,7 +2705,7 @@ function renderAdminAttendance() {
             <div class="attend-emp-stats">${fmtHours(totalMs)} · ${workedDays}d worked${leaveDays?' · '+leaveDays+'d leave':''}</div>
           </div>
         </div>
-        <button class="emp-pdf-btn" onclick="downloadEmpPDF('${emp}')">↓ PDF</button>
+        <button class="emp-pdf-btn" onclick="downloadEmpPDF('${emp}')" title="Full report — every record since day one">↓ Full Report</button>
       </div>
       <div class="attend-days-row" id="attend-days-${ei}"></div>
     `;
@@ -2742,7 +2823,7 @@ function downloadEmpPDF(empName) {
   doc.setTextColor(109,204,154);
   doc.text('Total Applications: '+totalApps, MARGIN+60, 67);
   doc.setTextColor(138,148,168);
-  doc.text('Shift: 8:00 PM – 5:00 AM IST (1hr break)', W-MARGIN-2, 62, {align:'right'});
+  doc.text('Shift: 5:00 PM – 5:00 AM IST (1hr break)', W-MARGIN-2, 62, {align:'right'});
 
   let cY = 78;
 
@@ -2947,14 +3028,16 @@ function navTo(page) {
 function renderKanban() {
   const board = document.getElementById('kanban-board');
   if (!board) return;
+  const emp = isAdmin ? activeTab : currentUser;
   const clients = getClients();
   const today = todayStr();
   board.innerHTML = '';
-  if (!clients.length) { board.innerHTML = '<div style="color:var(--fg3);font-size:13px;padding:20px;">No clients yet. Go to Dashboard → Add a client first.</div>'; return; }
+  if (!clients.length) { board.innerHTML = '<div style="color:var(--fg3);font-size:13px;padding:20px;">No clients yet. Go to Dashboard → Add a client first.</div>'; const kt0=document.getElementById('kb-total');if(kt0)kt0.textContent='0';const ktg0=document.getElementById('kb-target');if(ktg0)ktg0.textContent='0'; return; }
+  if (!emp) { board.innerHTML = '<div style="color:var(--fg3);font-size:13px;padding:20px;">Select an employee first to log applications.</div>'; const kt0=document.getElementById('kb-total');if(kt0)kt0.textContent='0';const ktg0=document.getElementById('kb-target');if(ktg0)ktg0.textContent='0'; return; }
   let grandTotal = 0, grandTarget = 0;
   clients.forEach(c => {
-    const count = (getAppCounts()[today] && getAppCounts()[today][c.name]) ? getAppCounts()[today][c.name] : 0;
-    const target = c.dailyTarget || 0;
+    const count = getCountFor(emp, c.id, today);
+    const target = c.target || 0;
     grandTotal += count; grandTarget += target;
     const pct = target > 0 ? Math.min(100, Math.round(count / target * 100)) : 0;
     const cls = count >= target && target > 0 ? 'done' : count > target ? 'over' : '';
@@ -2965,14 +3048,14 @@ function renderKanban() {
         <div class="kanban-col-count">${count}/${target}</div>
       </div>
       <div class="kanban-col-body">
-        <div class="kanban-card ${cls}" onclick="openClientModal('${c.name}')">
+        <div class="kanban-card ${cls}" onclick="openClientModal('${c.id}')">
           <div class="kc-name">${c.name}</div>
           <div class="kc-count">${count}</div>
           <div class="kc-target">Target: ${target} apps</div>
           <div class="kc-bar"><div class="kc-bar-fill" style="width:${pct}%"></div></div>
         </div>
         <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:4px;">
-          ${[1,5,10].map(n=>`<button class="quick-count-btn" onclick="quickAddApps('${c.name}',${n})" style="font-size:11px;padding:5px 9px;">+${n}</button>`).join('')}
+          ${[1,5,10].map(n=>`<button class="quick-count-btn" onclick="event.stopPropagation();quickAddApps('${c.id}',${n})" style="font-size:11px;padding:5px 9px;">+${n}</button>`).join('')}
         </div>
       </div>`;
     board.appendChild(col);
@@ -2984,14 +3067,10 @@ function renderKanban() {
 // ── LEADERBOARD ──
 function renderLeaderboard() {
   const lb = document.getElementById('lb-list'); if (!lb) return;
-  const emps = getEmployees(); const today = todayStr(); const counts = getAppCounts();
+  const emps = getEmployees(); const today = todayStr(); const clients = getClients();
   const ranked = emps.map(name => {
-    const dayData = counts[today] || {};
-    const total = Object.values(dayData[name] || dayData).reduce ? Object.values(dayData).reduce((s,v)=>{ if(typeof v==='object') return s+(v[name]||0); return s+(v||0); },0) : 0;
-    const clients = getClients();
-    let empTotal = 0;
-    clients.forEach(c => { const d = counts[today]; if(d && d[name] !== undefined) empTotal += d[name]||0; else if(d && d[c.name] !== undefined && name===currentUser) empTotal += d[c.name]||0; });
-    return { name, total: empTotal };
+    const total = clients.reduce((s,c)=>s+getCountFor(name,c.id,today),0);
+    return { name, total };
   }).sort((a,b) => b.total - a.total);
   lb.innerHTML = ranked.map((r,i) => `
     <div class="lb-item">
@@ -3003,11 +3082,16 @@ function renderLeaderboard() {
 }
 
 // ── QUICK ADD APPS (kanban) ──
-function quickAddApps(clientName, n) {
-  const counts = getAppCounts(); const today = todayStr();
-  if (!counts[today]) counts[today] = {};
-  counts[today][clientName] = (counts[today][clientName] || 0) + n;
-  saveAppCounts(counts); renderKanban(); renderClientCards(); updateDailyBanner();
+function quickAddApps(clientId, n) {
+  const emp = isAdmin ? activeTab : currentUser;
+  if (!emp) { alert('Select an employee first.'); return; }
+  const client = getClients().find(c=>c.id===clientId); if (!client) return;
+  const today = todayStr();
+  const newCount = Math.max(0, getCountFor(emp, clientId, today) + n);
+  const logs = getAppLogs().filter(l=>!(l.employee===emp&&l.clientId===clientId&&l.date===today));
+  logs.push({employee:emp,clientId:clientId,clientName:client.name,date:today,count:newCount,note:'',ts:Date.now()});
+  saveAppLogs(logs);
+  renderKanban(); renderClientCards(); updateNightBanner();
 }
 
 // ── TASK COUNT LABEL ──
@@ -3043,7 +3127,7 @@ function updateDashKPIs() {
   if (kpiH) { const recs = getRecords().filter(r=>r.emp===(isAdmin?r.emp:currentUser)&&r.out); const wTotal = recs.reduce((s,r)=>s+(r.out-r.in-(r.breakMs||0)),0); kpiH.textContent = fmtHoursDecimal(wTotal); }
   // Apps
   const kpiA = document.getElementById('kpi-apps'); const kpiAS = document.getElementById('kpi-apps-sub');
-  if (kpiA) { const clients=getClients(); const counts=getAppCounts(); const today=todayStr(); let total=0,target=0; clients.forEach(c=>{ total+=(counts[today]&&counts[today][c.name])||0; target+=c.dailyTarget||0; }); kpiA.textContent=total; if(kpiAS) kpiAS.textContent='/ '+target+' target'; }
+  if (kpiA) { const clients=getClients(); const emp=isAdmin?activeTab:currentUser; const today=todayStr(); let total=0,target=0; clients.forEach(c=>{ total+=emp?getCountFor(emp,c.id,today):0; target+=c.target||0; }); kpiA.textContent=total; if(kpiAS) kpiAS.textContent='/ '+target+' target'; }
   // Team online
   const kpiT = document.getElementById('kpi-team');
   if (kpiT) { const st=getClockState(); let cnt=0; getEmployees().forEach(e=>{ const s=st[e]; if(s&&s.in&&!s.out) cnt++; }); kpiT.textContent=cnt; }
